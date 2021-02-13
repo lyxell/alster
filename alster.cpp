@@ -5,6 +5,7 @@
 #include <streambuf>
 
 #include "buffer.h"
+#include "tokenize/tokenize.h"
 
 #define KEY_ESCAPE 27
 
@@ -20,9 +21,51 @@ struct state {
 };
 
 void render(const buffer_t& buf, const state& s) {
-    mvprintw(0, 0, buffer_to_string(buf).c_str());
+    std::string str = buffer_to_string(buf);
+    std::vector<buffer_char_t> color(str.size());
+    tokenize_c(str.c_str(), color.data());
+    std::vector<std::vector<buffer_char_t>> colors = {std::vector<buffer_char_t>()};
+    for (size_t i = 0; i < color.size(); i++) {
+        if (str[i] == '\n') {
+            colors.emplace_back();
+        } else {
+            colors.back().push_back(color[i]);
+        }
+    }
     for (int i = 0; i < LINES; i++) {
-        mvprintw(i, 0, buffer_get_line(buf, i + s.scroll).c_str());
+        auto str = buffer_get_line(buf, i + s.scroll);
+        move(i, 0);
+        for (int j = 0; j < std::min(size_t(COLS), str.size()); j++) {
+            switch (colors[i+s.scroll][j]) {
+            case TOKEN_PREPROC:
+            case TOKEN_COMMENT:
+                attron(COLOR_PAIR(1));
+                mvaddch(i, j, str[j]);
+                attroff(COLOR_PAIR(1));
+                break;
+            case TOKEN_BOOL_LIT:
+            case TOKEN_INT_LIT:
+            case TOKEN_STRING_LIT:
+                attron(COLOR_PAIR(2));
+                mvaddch(i, j, str[j]);
+                attroff(COLOR_PAIR(2));
+                break;
+            case TOKEN_TYPE_QUALIFIER:
+            case TOKEN_TYPE:
+                attron(COLOR_PAIR(3));
+                mvaddch(i, j, str[j]);
+                attroff(COLOR_PAIR(3));
+                break;
+            case TOKEN_KEYWORD:
+                attron(COLOR_PAIR(4));
+                mvaddch(i, j, str[j]);
+                attroff(COLOR_PAIR(4));
+                break;
+            default:
+                mvaddch(i, j, str[j]);
+                break;
+            }
+        }
         clrtoeol();
     }
     move(buf.y - s.scroll, buf.x);
@@ -38,6 +81,12 @@ int main(int argc, char* argv[]) {
     cbreak();
     keypad(stdscr, true);
     set_escdelay(100);
+    use_default_colors();
+    start_color();
+    init_pair(1, 8, 0);
+    init_pair(2, 1, 0);
+    init_pair(3, 2, 0);
+    init_pair(4, 3, 0);
     if (filename) {
         std::ifstream t(filename);
         std::string str((std::istreambuf_iterator<char>(t)),
