@@ -12,7 +12,9 @@ struct buffer_t {
     int x;
     int y;
     std::vector<std::shared_ptr<buffer_line_t>> lines;
-    buffer_t() : x(), y(), lines({std::make_shared<buffer_line_t>()}) {}
+    buffer_t() : x(), y(), lines() {
+        lines.emplace_back();
+    }
     buffer_t(const std::string& s) : x(), y(), lines() {
         buffer_line_t curr_line;
         for (const auto c : s) {
