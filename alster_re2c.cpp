@@ -9,6 +9,19 @@
 
 #define KEY_ESCAPE 27
 
+#define YYPEEK()  (c = getchar())
+#define YYSKIP()  (c)
+
+/*!re2c
+command_move_start_of_buffer    = "gg";
+command_move_end_of_buffer      = "G";
+command_quit                    = "q";
+command_move_left               = "h";
+command_move_right              = "l";
+command_move_up                 = "k";
+command_move_down               = "j";
+*/
+
 enum {
     MODE_NORMAL,
     MODE_INSERT
@@ -101,29 +114,26 @@ int main(int argc, char* argv[]) {
             s.scroll = buf.y - LINES + 1;
         }
         render(buf, s);
-        int input = getch();
         if (s.mode == MODE_NORMAL) {
-            switch (input) {
-            case 'l':
-                buf = buffer_move_right(buf, 1);
-                break;
-            case 'h':
-                buf = buffer_move_left(buf, 1);
-                break;
-            case 'k':
-                buf = buffer_move_up(buf, 1);
-                break;
-            case 'j':
-                buf = buffer_move_down(buf, 1);
-                break;
-            case 'i':
-                s.mode = MODE_INSERT;
-                break;
-            case 'q':
-                s.exiting = true;
-                break;
-            }
+            char c;
+            /*!re2c
+            re2c:flags:input = custom;
+            re2c:define:YYCTYPE = char;
+            re2c:yyfill:enable = 0;
+
+            command_move_left
+            { buf = buffer_move_left(buf, 1); continue; }
+            command_move_right
+            { buf = buffer_move_right(buf, 1); continue; }
+            command_move_down
+            { buf = buffer_move_down(buf, 1); continue; }
+            command_move_up
+            { buf = buffer_move_up(buf, 1); continue; }
+            *
+            { continue; }
+            */
         } else if (s.mode == MODE_INSERT) {
+            /*
             switch (input) {
             case '\n':
                 buf = buffer_break_line(buf);
@@ -138,6 +148,8 @@ int main(int argc, char* argv[]) {
                 buf = buffer_insert(buf, input);
                 break;
             }
+            */
+            break;
         }
         if (s.exiting) {
             break;
