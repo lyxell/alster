@@ -2,3 +2,5 @@ alster
 tokenize/tokenize_c.cpp
 .gdb_history
 alster.cpp
+CORPUS_DIR
+fuzzer

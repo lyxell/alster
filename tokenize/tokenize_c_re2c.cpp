@@ -51,6 +51,7 @@ void tokenize_c(const char* YYCURSOR, char* color) {
                     "char"      |
                     "double"    |
                     "float"     |
+                    "size_t"    |
                     "int"       |
                     "void";
 

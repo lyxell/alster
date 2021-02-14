@@ -19,6 +19,7 @@ buffer_t
 buffer_move_down(const buffer_t& b, int steps) {
     buffer_t n(b);
     n.y = std::min(int(b.lines.size()) - 1, n.y + steps);
+    n.x = std::min(n.x, int(b.lines[n.y]->size()));
     return n;
 }
 
@@ -26,6 +27,7 @@ buffer_t
 buffer_move_up(const buffer_t& b, int steps) {
     buffer_t n(b);
     n.y = std::max(0, n.y - steps);
+    n.x = std::min(n.x, int(b.lines[n.y]->size()));
     return n;
 }
 
