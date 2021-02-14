@@ -73,7 +73,8 @@ void tokenize_c(const char* YYCURSOR, char* color) {
             "if"        |
             "return"    |
             "struct"    |
-            "switch"
+            "switch"    |
+            "while"
             
             {
                 memset(color_loc, TOKEN_KEYWORD, YYCURSOR - token_start);

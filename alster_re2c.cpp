@@ -80,11 +80,11 @@ void handle_input(buffer_t& buf, state& s, S YYPEEK, T YYSKIP) {
     re2c:define:YYCTYPE = char;
     re2c:yyfill:enable = 0;
 
-    null = "\x00";
-    escape = "\x1b";
-    return = "\x0d";
-    delete = "\x7f";
-    tab    = "\x09";
+    null    = "\x00";
+    escape  = "\x1b";
+    return  = "\x0d";
+    delete  = "\x7f";
+    tab     = "\x09";
 */
     if (s.mode == MODE_NORMAL) {
 /*!re2c
