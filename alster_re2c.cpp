@@ -30,11 +30,11 @@ void render(const buffer_t& buf, const state& s) {
             colors.back().push_back(color[i]);
         }
     }
-    for (int i = 0; i < LINES; i++) {
+    for (size_t i = 0; i < size_t(LINES); i++) {
         move(i, 0);
         if (buf.lines.size() > i + s.scroll) {
             auto str = buffer_get_line(buf, i + s.scroll);
-            for (int j = 0; j < std::min(size_t(COLS), str.size()); j++) {
+            for (size_t j = 0; j < std::min(size_t(COLS), str.size()); j++) {
                 switch (colors[i+s.scroll][j]) {
                 case TOKEN_PREPROC:
                 case TOKEN_COMMENT:
@@ -112,7 +112,6 @@ void handle_input(buffer_t& buf, state& s, S YYPEEK, T YYSKIP) {
 #ifndef FUZZ
 int main(int argc, char* argv[]) {
     state s = {};
-    const char* filename = "alster_re2c.cpp";
     buffer_t buf = {};
     initscr();
     noecho();
