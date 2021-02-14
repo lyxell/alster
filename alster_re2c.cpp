@@ -162,22 +162,23 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 #else
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
+extern "C"
+int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     state s = {};
     buffer_t buf = {};
     size_t curr = 0;
     auto YYPEEK = [&](){
-        return Data[curr];
+        return data[curr];
     };
     auto YYSKIP = [&](){
-        if (curr + 1 < Size) {
+        if (curr + 1 < size) {
             curr++;
         }
     };
     while (true) {
         handle_input(buf, s, YYPEEK, YYSKIP);
-        if (curr + 1 >= Size) break;
+        if (curr + 1 >= size) break;
     }
-    return 0;  // Non-zero return values are reserved for future use.
+    return 0;
 }
 #endif
