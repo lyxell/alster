@@ -66,6 +66,7 @@ void tokenize_c(const char* YYCURSOR, char* color) {
 
             "break"     |
             "case"      |
+            "continue"  |
             "default"   |
             "else"      |
             "enum"      |

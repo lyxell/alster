@@ -1,4 +1,5 @@
 #include <ncurses.h>
+#include <chrono>
 #include <stdbool.h>
 #include <string>
 #include <fstream>
@@ -19,6 +20,9 @@ struct state {
 };
 
 void render(const buffer_t& buf, const state& s) {
+    static buffer_t oldBuf;
+    if (oldBuf == buf) return;
+    oldBuf = buf;
     std::string str = buffer_to_string(buf);
     std::vector<buffer_char_t> color(str.size());
     tokenize_c(str.c_str(), color.data());
@@ -69,8 +73,10 @@ void render(const buffer_t& buf, const state& s) {
         clrtoeol();
     }
     mvprintw(0, COLS - 4, "%04d", buffer_get_line(buf, buf.y)[buf.x]);
+}
+
+void render_cursor(const buffer_t& buf, const state& s) {
     move(buf.y - s.scroll, buf.x);
-    refresh();
 }
 
 template <typename S, typename T>
@@ -131,6 +137,7 @@ int main(int argc, char* argv[]) {
         buf = buffer_t(str);
     }
     while (true) {
+        auto start = std::chrono::high_resolution_clock::now();
         if (buf.y < s.scroll) {
             s.scroll = buf.y;
         } else if (buf.y >= s.scroll + LINES) {
@@ -149,6 +156,11 @@ int main(int argc, char* argv[]) {
         auto YYSKIP = [&](){
             skip = true;
         };
+        auto end = std::chrono::high_resolution_clock::now();
+        int ms = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        mvprintw(1, COLS - 9, "%6d us", ms);
+        render_cursor(buf, s);
+        refresh();
         handle_input(buf, s, YYPEEK, YYSKIP);
         if (s.exiting) {
             break;

@@ -27,6 +27,9 @@ struct buffer_t {
         }
         lines.push_back(std::make_shared<buffer_line_t>(curr_line));
     }
+    bool operator==(const buffer_t& rhs) {
+        return x == rhs.x && y == rhs.y && lines == rhs.lines;
+    }
 };
 
 buffer_t
