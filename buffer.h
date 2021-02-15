@@ -58,3 +58,15 @@ buffer_break_line(const buffer_t& b);
 
 std::string
 buffer_get_line(const buffer_t& b, size_t i);
+
+buffer_t
+buffer_move_start(const buffer_t& b);
+
+buffer_t
+buffer_move_end(const buffer_t& b);
+
+buffer_t
+buffer_move_start_of_line(const buffer_t& b);
+
+buffer_t
+buffer_move_end_of_line(const buffer_t& b);

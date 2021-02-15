@@ -9,6 +9,36 @@ buffer_move_left(const buffer_t& b, int steps) {
 }
 
 buffer_t
+buffer_move_start(const buffer_t& b) {
+    buffer_t n(b);
+    n.x = 0;
+    n.y = 0;
+    return n;
+}
+
+buffer_t
+buffer_move_end(const buffer_t& b) {
+    buffer_t n(b);
+    n.y = n.lines.size() - 1;
+    n.x = n.lines.back()->size();
+    return n;
+}
+
+buffer_t
+buffer_move_start_of_line(const buffer_t& b) {
+    buffer_t n(b);
+    n.x = 0;
+    return n;
+}
+
+buffer_t
+buffer_move_end_of_line(const buffer_t& b) {
+    buffer_t n(b);
+    n.x = n.lines[n.y]->size();
+    return n;
+}
+
+buffer_t
 buffer_move_right(const buffer_t& b, int steps) {
     buffer_t n(b);
     n.x = std::min(int(b.lines[n.y]->size()), n.x + steps);
