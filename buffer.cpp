@@ -1,122 +1,116 @@
 #include <algorithm>
 #include "buffer.h"
 
-buffer_t
-buffer_move_left(const buffer_t& b, int steps) {
-    buffer_t n(b);
-    n.x = std::max(0, n.x - steps);
-    return n;
+buffer
+buffer_move_start(const buffer& b) {
+    auto& [lines, pos] = b;
+    return {lines, {0, 0}};
 }
 
-buffer_t
-buffer_move_start(const buffer_t& b) {
-    buffer_t n(b);
-    n.x = 0;
-    n.y = 0;
-    return n;
+buffer
+buffer_move_end(const buffer& b) {
+    auto& [lines, pos] = b;
+    return {lines, {0, lines.size() - 1}};
 }
 
-buffer_t
-buffer_move_end(const buffer_t& b) {
-    buffer_t n(b);
-    n.y = n.lines.size() - 1;
-    n.x = n.lines.back()->size();
-    return n;
+buffer
+buffer_move_left(const buffer& b, size_t n) {
+    auto& [lines, pos] = b;
+    size_t x = std::min(lines[pos.y]->size(), pos.x);
+    return {lines, {n > x ? 0 : x - n, pos.y}};
 }
 
-buffer_t
-buffer_move_start_of_line(const buffer_t& b) {
-    buffer_t n(b);
-    n.x = 0;
-    return n;
+buffer
+buffer_move_start_of_line(const buffer& b) {
+    auto& [lines, pos] = b;
+    return {lines, {0, pos.y}};
 }
 
-buffer_t
-buffer_move_end_of_line(const buffer_t& b) {
-    buffer_t n(b);
-    n.x = n.lines[n.y]->size();
-    return n;
+buffer
+buffer_move_end_of_line(const buffer& b) {
+    auto& [lines, pos] = b;
+    return {lines, {lines[pos.y]->size(), pos.y}};
 }
 
-buffer_t
-buffer_move_right(const buffer_t& b, int steps) {
-    buffer_t n(b);
-    n.x = std::min(int(b.lines[n.y]->size()), n.x + steps);
-    return n;
+buffer
+buffer_move_right(const buffer& b, size_t n) {
+    auto& [lines, pos] = b;
+    size_t x = std::min(lines[pos.y]->size(), pos.x);
+    return {lines, {std::min(x + n, lines[pos.y]->size()), pos.y}};
 }
 
-buffer_t
-buffer_move_down(const buffer_t& b, int steps) {
-    buffer_t n(b);
-    n.y = std::min(int(b.lines.size()) - 1, n.y + steps);
-    n.x = std::min(n.x, int(b.lines[n.y]->size()));
-    return n;
+buffer
+buffer_move_down(const buffer& b, size_t n) {
+    auto& [lines, pos] = b;
+    return {lines, {pos.x, std::min(pos.y + n, lines.size() - 1)}};
 }
 
-buffer_t
-buffer_move_up(const buffer_t& b, int steps) {
-    buffer_t n(b);
-    n.y = std::max(0, n.y - steps);
-    n.x = std::min(n.x, int(b.lines[n.y]->size()));
-    return n;
+buffer
+buffer_move_up(const buffer& b, size_t n) {
+    auto& [lines, pos] = b;
+    return {lines, {pos.x, n > pos.y ? 0 : pos.y - n}};
 }
 
-buffer_t
-buffer_insert(const buffer_t& b, buffer_char_t c) {
-    buffer_t n(b);
-    n.lines[n.y] = std::make_shared<buffer_line_t>(*n.lines[n.y]);
-    n.lines[n.y]->insert(n.lines[n.y]->begin() + n.x, c);
-    n.x++;
-    return n;
+buffer
+buffer_insert(const buffer& b, buffer_char c) {
+    auto [lines, pos] = b;
+    size_t x = std::min(lines[pos.y]->size(), pos.x);
+    lines[pos.y] = std::make_shared<buffer_line>(*lines[pos.y]);
+    lines[pos.y]->insert(lines[pos.y]->begin() + x, c);
+    return {lines, {x + 1, pos.y}};
 }
 
-buffer_t
-buffer_break_line(const buffer_t& b) {
-    buffer_t n(b);
-    buffer_line_t curr_line = *n.lines[n.y];
-    n.lines.erase(n.lines.begin() + n.y);
-    n.lines.insert(n.lines.begin() + n.y,
-                    std::make_shared<buffer_line_t>(
-                                curr_line.begin() + n.x,
-                                curr_line.end()));
-    n.lines.insert(n.lines.begin() + n.y,
-                    std::make_shared<buffer_line_t>(
-                                curr_line.begin(),
-                                curr_line.begin() + n.x));
-    n.x = 0;
-    n.y++;
-    return n;
+buffer
+buffer_break_line(const buffer& b) {
+    auto [lines, pos] = b;
+    auto line = *lines[pos.y];
+    size_t x = std::min(lines[pos.y]->size(), pos.x);
+    lines.erase(lines.begin() + pos.y);
+    lines.insert(lines.begin() + pos.y,
+                    std::make_shared<buffer_line>(
+                                line.begin() + x,
+                                line.end()));
+    lines.insert(lines.begin() + pos.y,
+                    std::make_shared<buffer_line>(
+                                line.begin(),
+                                line.begin() + x));
+    return {lines, {0, pos.y + 1}};
 }
 
-buffer_t
-buffer_erase(const buffer_t& b) {
-    buffer_t n(b);
-    if (n.x > 0) {
-        n.lines[n.y] = std::make_shared<buffer_line_t>(*n.lines[n.y]);
-        n.lines[n.y]->erase(n.lines[n.y]->begin() + n.x - 1);
-        n.x--;
-    } else if (n.y > 0) {
-        n.x = n.lines[n.y-1]->size();
-        n.lines[n.y-1]->insert(n.lines[n.y-1]->end(),
-                               n.lines[n.y]->begin(),
-                               n.lines[n.y]->end());
-        n.lines.erase(n.lines.begin() + n.y);
-        n.y--;
+buffer
+buffer_erase(const buffer& b) {
+    auto [lines, pos] = b;
+    auto [x, y] = std::pair(std::min(pos.x, lines[pos.y]->size()), pos.y);
+    if (x > 0) {
+        lines[y] = std::make_shared<buffer_line>(*lines[y]);
+        lines[y]->erase(lines[y]->begin() + x - 1);
+        x--;
+    } else if (y > 0) {
+        x = lines[y-1]->size();
+        lines[y-1]->insert(lines[y-1]->end(),
+                               lines[y]->begin(),
+                               lines[y]->end());
+        lines.erase(lines.begin() + y);
+        y--;
     }
-    return n;
+    return {lines, {x, y}};
 }
 
 std::string
-buffer_to_string(const buffer_t& b) {
-    static std::string s;
-    for (const auto& line : b.lines) {
+buffer_to_string(const buffer& b) {
+    auto& [lines, pos] = b;
+    std::string s;
+    for (const auto& line : lines) {
         std::copy(line->begin(), line->end(), std::back_inserter(s));
         s.push_back('\n');
     }
+    // no trailing newline
+    if (s.size() > 0) s.pop_back();
     return s;
 }
 
 std::string
-buffer_get_line(const buffer_t& b, size_t i) {
-    return std::string(b.lines[i]->begin(), b.lines[i]->end());
+buffer_get_line(const buffer& b, size_t i) {
+    auto& [lines, pos] = b;
+    return std::string(lines[i]->begin(), lines[i]->end());
 }

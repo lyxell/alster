@@ -1,6 +1,7 @@
 #include <ncurses.h>
 #include <chrono>
 #include <stdbool.h>
+#include <assert.h>
 #include <string>
 #include <fstream>
 #include <streambuf>
@@ -30,80 +31,53 @@ update_window_size(const state& s) {
 }
 
 state
-update_scroll(const state& s, const buffer_t& b) {
+update_scroll(const state& s, const buffer& b) {
+    const auto& [lines, pos] = b;
     state next = s;
-    if (b.y < s.scroll) {
-        next.scroll = b.y;
-    } else if (b.y >= s.scroll + s.window_height) {
-        next.scroll = b.y - s.window_height + 1;
+    if (pos.y < s.scroll) {
+        next.scroll = pos.y;
+    } else if (pos.y >= s.scroll + s.window_height) {
+        next.scroll = pos.y - s.window_height + 1;
     }
     return next;
 }
 
-void render(const buffer_t& buf, const state& s) {
-    static buffer_t oldBuf;
-    if (oldBuf == buf) return;
-    oldBuf = buf;
+void render(const buffer& buf, const state& s) {
+    const auto& [lines, pos] = buf;
     std::string str = buffer_to_string(buf);
-    std::vector<buffer_char_t> color(str.size());
+    std::vector<buffer_char> color(str.size());
     tokenize_c(str.c_str(), color.data());
-    std::vector<std::vector<buffer_char_t>> colors = {std::vector<buffer_char_t>()};
-    for (size_t i = 0; i < color.size(); i++) {
+    std::vector<std::vector<buffer_char>> colors = {std::vector<buffer_char>()};
+    for (size_t i = 0; i < str.size(); i++) {
         if (str[i] == '\n') {
             colors.emplace_back();
         } else {
             colors.back().push_back(color[i]);
         }
-    }
+    } 
     for (size_t i = 0; i < s.window_height; i++) {
         move(i, 0);
-        if (buf.lines.size() > i + s.scroll) {
+        if (lines.size() > i + s.scroll) {
             auto str = buffer_get_line(buf, i + s.scroll);
             for (size_t j = 0; j < std::min(s.window_width, str.size()); j++) {
-                mvaddch(i, j, str[j]);
-                switch (colors[i+s.scroll][j]) {
-                case TOKEN_PREPROC:
-                case TOKEN_COMMENT:
-                    attron(COLOR_PAIR(1));
-                    mvaddch(i, j, str[j]);
-                    attroff(COLOR_PAIR(1));
-                    break;
-                case TOKEN_BOOL_LIT:
-                case TOKEN_INT_LIT:
-                case TOKEN_STRING_LIT:
-                    attron(COLOR_PAIR(2));
-                    mvaddch(i, j, str[j]);
-                    attroff(COLOR_PAIR(2));
-                    break;
-                case TOKEN_TYPE_QUALIFIER:
-                case TOKEN_TYPE:
-                    attron(COLOR_PAIR(3));
-                    mvaddch(i, j, str[j]);
-                    attroff(COLOR_PAIR(3));
-                    break;
-                case TOKEN_KEYWORD:
-                    attron(COLOR_PAIR(4));
-                    mvaddch(i, j, str[j]);
-                    attroff(COLOR_PAIR(4));
-                    break;
-                default:
-                    mvaddch(i, j, str[j]);
-                    break;
-                }
+                attron(COLOR_PAIR(colors[i+s.scroll][j]));
+                addch(str[j]);
+                attroff(COLOR_PAIR(colors[i+s.scroll][j]));
             }
         }
         clrtoeol();
     }
-    mvprintw(0, COLS - 4, "%04d", buffer_get_line(buf, buf.y)[buf.x]);
+    mvprintw(0, COLS - 4, "%04d", buffer_get_line(buf, pos.y)[pos.x]);
 }
 
-void render_cursor(const buffer_t& buf, const state& s) {
-    move(buf.y - s.scroll, buf.x);
+void render_cursor(const buffer& buf, const state& s) {
+    auto [lines, pos] = buf;
+    move(pos.y - s.scroll, pos.x);
 }
 
 template <typename S, typename T>
-void handle_input(buffer_t& buf, state& s, S YYPEEK, T YYSKIP) {
-/*!re2c
+void handle_input(buffer& buf, state& s, S YYPEEK, T YYSKIP) {
+    /*!re2c
     re2c:flags:input = custom;
     re2c:define:YYCTYPE = char;
     re2c:yyfill:enable = 0;
@@ -113,9 +87,9 @@ void handle_input(buffer_t& buf, state& s, S YYPEEK, T YYSKIP) {
     return  = "\x0d";
     delete  = "\x7f";
     tab     = "\x09";
-*/
+    */
     if (s.mode == MODE_NORMAL) {
-/*!re2c
+        /*!re2c
         "$"  { buf = buffer_move_end_of_line(buf); return; }
         "0"  { buf = buffer_move_start_of_line(buf); return; }
         "G"  { buf = buffer_move_end(buf); return; }
@@ -127,9 +101,9 @@ void handle_input(buffer_t& buf, state& s, S YYPEEK, T YYSKIP) {
         "l"  { buf = buffer_move_right(buf, 1); return; }
         null { return; }
         *    { return; }
-*/
+        */
     } else if (s.mode == MODE_INSERT) {
-/*!re2c
+        /*!re2c
         delete { buf = buffer_erase(buf); return; }
         escape { s.mode = MODE_NORMAL; return; }
         return { buf = buffer_break_line(buf); return; }
@@ -137,11 +111,11 @@ void handle_input(buffer_t& buf, state& s, S YYPEEK, T YYSKIP) {
                  return; }
         null   { return; }
         *      { buf = buffer_insert(buf, yych); return; }
-*/
+        */
     }
 }
 
-void handle_input_stdin(buffer_t& buf, state& s) {
+void handle_input_stdin(buffer& buf, state& s) {
     char c;
     bool skip = true;
     auto YYPEEK = [&](){
@@ -160,7 +134,10 @@ void handle_input_stdin(buffer_t& buf, state& s) {
 #ifndef FUZZ
 int main(int argc, char* argv[]) {
     state s = {};
-    buffer_t buf = {};
+    buffer buf = {
+        {std::make_shared<buffer_line>()},
+        {0,0}
+    };
     initscr();
     noecho();
     cbreak();
@@ -172,12 +149,21 @@ int main(int argc, char* argv[]) {
     init_pair(2, 1, 0);
     init_pair(3, 2, 0);
     init_pair(4, 3, 0);
+    init_pair(5, 8, 0);
+    init_pair(6, 1, 0);
+    init_pair(7, 2, 0);
+    init_pair(8, 3, 0);
+    init_pair(9, 8, 0);
+    init_pair(10, 1, 0);
+    init_pair(11, 2, 0);
+    init_pair(12, 3, 0);
+    /*
     if (argc > 1) {
         std::ifstream t(argv[1]);
         std::string str((std::istreambuf_iterator<char>(t)),
                          std::istreambuf_iterator<char>());
-        buf = buffer_t(str);
-    }
+        buf = buffer(str);
+    }*/
     while (true) {
         auto timer_start = std::chrono::high_resolution_clock::now();
         s = update_window_size(s);
@@ -203,7 +189,10 @@ int main(int argc, char* argv[]) {
 extern "C"
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     state s = {};
-    buffer_t buf = {};
+    buffer buf = {
+        {std::make_shared<buffer_line>()},
+        {0,0}
+    };
     size_t curr = 0;
     auto YYPEEK = [&](){
         return data[curr];
