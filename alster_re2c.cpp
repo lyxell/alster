@@ -17,7 +17,28 @@ struct state {
     bool exiting;
     int mode;
     int scroll;
+    size_t window_width;
+    size_t window_height;
 };
+
+state
+update_window_size(const state& s) {
+    state next = s;
+    next.window_width = COLS;
+    next.window_height = LINES;
+    return next;
+}
+
+state
+update_scroll(const state& s, const buffer_t& b) {
+    state next = s;
+    if (b.y < s.scroll) {
+        next.scroll = b.y;
+    } else if (b.y >= s.scroll + s.window_height) {
+        next.scroll = b.y - s.window_height + 1;
+    }
+    return next;
+}
 
 void render(const buffer_t& buf, const state& s) {
     static buffer_t oldBuf;
@@ -34,11 +55,12 @@ void render(const buffer_t& buf, const state& s) {
             colors.back().push_back(color[i]);
         }
     }
-    for (size_t i = 0; i < size_t(LINES); i++) {
+    for (size_t i = 0; i < s.window_height; i++) {
         move(i, 0);
         if (buf.lines.size() > i + s.scroll) {
             auto str = buffer_get_line(buf, i + s.scroll);
-            for (size_t j = 0; j < std::min(size_t(COLS), str.size()); j++) {
+            for (size_t j = 0; j < std::min(s.window_width, str.size()); j++) {
+                mvaddch(i, j, str[j]);
                 switch (colors[i+s.scroll][j]) {
                 case TOKEN_PREPROC:
                 case TOKEN_COMMENT:
@@ -115,6 +137,22 @@ void handle_input(buffer_t& buf, state& s, S YYPEEK, T YYSKIP) {
     }
 }
 
+void handle_input_stdin(buffer_t& buf, state& s) {
+    char c;
+    bool skip = true;
+    auto YYPEEK = [&](){
+        if (skip) {
+            c = getchar(); 
+            skip = false;
+        }
+        return c;
+    };
+    auto YYSKIP = [&](){
+        skip = true;
+    };
+    handle_input(buf, s, YYPEEK, YYSKIP);
+}
+
 #ifndef FUZZ
 int main(int argc, char* argv[]) {
     state s = {};
@@ -137,31 +175,16 @@ int main(int argc, char* argv[]) {
         buf = buffer_t(str);
     }
     while (true) {
-        auto start = std::chrono::high_resolution_clock::now();
-        if (buf.y < s.scroll) {
-            s.scroll = buf.y;
-        } else if (buf.y >= s.scroll + LINES) {
-            s.scroll = buf.y - LINES + 1;
-        }
+        auto timer_start = std::chrono::high_resolution_clock::now();
+        s = update_window_size(s);
+        s = update_scroll(s, buf);
         render(buf, s);
-        char c;
-        bool skip = true;
-        auto YYPEEK = [&](){
-            if (skip) {
-                c = getchar(); 
-                skip = false;
-            }
-            return c;
-        };
-        auto YYSKIP = [&](){
-            skip = true;
-        };
-        auto end = std::chrono::high_resolution_clock::now();
-        int ms = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-        mvprintw(1, COLS - 9, "%6d us", ms);
+        auto timer_end = std::chrono::high_resolution_clock::now();
+        int timer_elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(timer_end - timer_start).count();
+        mvprintw(1, COLS - 9, "%6d ms", timer_elapsed_ms);
         render_cursor(buf, s);
         refresh();
-        handle_input(buf, s, YYPEEK, YYSKIP);
+        handle_input_stdin(buf, s);
         if (s.exiting) {
             break;
         }

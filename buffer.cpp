@@ -78,11 +78,9 @@ buffer_erase(const buffer_t& b) {
 
 std::string
 buffer_to_string(const buffer_t& b) {
-    std::string s;
+    static std::string s;
     for (const auto& line : b.lines) {
-        for (const auto c : *line) {
-            s.push_back(c);
-        }
+        std::copy(line->begin(), line->end(), std::back_inserter(s));
         s.push_back('\n');
     }
     return s;
