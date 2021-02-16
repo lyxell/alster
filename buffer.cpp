@@ -52,6 +52,16 @@ buffer_move_up(const buffer& b, size_t n) {
 }
 
 buffer
+buffer_erase_current_line(const buffer& b) {
+    auto [lines, pos] = b;
+    if (lines.size() == 1) {
+        return {{std::make_shared<buffer_line>()}, pos};
+    }
+    lines.erase(lines.begin() + pos.y);
+    return {lines, {pos.x, std::min(pos.y, lines.size() - 1)}};
+}
+
+buffer
 buffer_insert(const buffer& b, buffer_char c, size_t n) {
     auto [lines, pos] = b;
     size_t x = std::min(lines[pos.y]->size(), pos.x);

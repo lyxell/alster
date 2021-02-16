@@ -66,3 +66,6 @@ buffer_move_end_of_line(const buffer&);
 buffer_line
 buffer_get_current_line(const buffer&);
 
+buffer
+buffer_erase_current_line(const buffer&);
+

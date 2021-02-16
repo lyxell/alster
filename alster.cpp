@@ -86,8 +86,7 @@ void render(const buffer& buf, const state& s) {
 
 void render_cursor(const buffer& buf, const state& s) {
     auto [lines, pos] = buf;
-    move(pos.y - s.scroll,
-         std::min(pos.x, buffer_get_line(buf, pos.y).size()));
+    move(pos.y - s.scroll, std::min(pos.x, buffer_get_line(buf, pos.y).size()));
 }
 
 template <typename S, typename T>
@@ -97,37 +96,35 @@ handle_input(const buffer& b, const state& s, S YYPEEK, T YYSKIP) {
     re2c:flags:input = custom;
     re2c:define:YYCTYPE = char;
     re2c:yyfill:enable = 0;
-
-    null    = "\x00";
-    escape  = "\x1b";
-    return  = "\x0d";
-    delete  = "\x7f";
-    tab     = "\x09";
+    nul = "\x00";
+    esc = "\x1b";
+    ret = "\x0d";
+    del = "\x7f";
+    tab = "\x09";
     */
     if (s.mode == MODE_NORMAL) {
         /*!re2c
-        "$"  { return {buffer_move_end_of_line(b), s}; }
-        "0"  { return {buffer_move_start_of_line(b), s}; }
-        "A"  { return {buffer_move_end_of_line(b),
-                       state_enter_insert_mode(s)}; }
-        "G"  { return {buffer_move_end(b), s}; }
-        "gg" { return {buffer_move_start(b), s}; }
-        "h"  { return {buffer_move_left(b, 1), s}; }
-        "i"  { return {b, state_enter_insert_mode(s)}; }
-        "j"  { return {buffer_move_down(b, 1), s}; }
-        "k"  { return {buffer_move_up(b, 1), s}; }
-        "l"  { return {buffer_move_right(b, 1), s}; }
-        *    { return {b, s}; }
-        null { return {b, s}; }
+        "$"  {return {buffer_move_end_of_line(b), s};}
+        "0"  {return {buffer_move_start_of_line(b), s};}
+        "A"  {return {buffer_move_end_of_line(b),state_enter_insert_mode(s)};}
+        "G"  {return {buffer_move_end(b), s};}
+        "dd" {return {buffer_erase_current_line(b), s};}
+        "gg" {return {buffer_move_start(b), s};}
+        "h"  {return {buffer_move_left(b, 1), s};}
+        "i"  {return {b, state_enter_insert_mode(s)};}
+        "j"  {return {buffer_move_down(b, 1), s};}
+        "k"  {return {buffer_move_up(b, 1), s};}
+        "l"  {return {buffer_move_right(b, 1), s};}
+        *    {return {b, s};}
         */
     } else if (s.mode == MODE_INSERT) {
         /*!re2c
-        delete { return {buffer_erase(b), s}; }
-        escape { return {b, state_enter_normal_mode(s)}; }
-        return { return {buffer_break_line(b), s}; }
-        tab    { return {buffer_insert(b, ' ', 4), s}; }
-        null   { return {b, s}; }
-        *      { return {buffer_insert(b, yych, 1), s}; }
+        del  {return {buffer_erase(b), s};}
+        esc  {return {buffer_move_left(b, 1), state_enter_normal_mode(s)};}
+        ret  {return {buffer_break_line(b), s};}
+        tab  {return {buffer_insert(b, ' ', 4), s};}
+        nul  {return {b, s};}
+        *    {return {buffer_insert(b, yych, 1), s};}
         */
     }
     return {b, s};
