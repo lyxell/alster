@@ -37,7 +37,7 @@ buffer
 buffer_move_up(const buffer&, size_t);
 
 buffer
-buffer_insert(const buffer&, buffer_char);
+buffer_insert(const buffer&, buffer_char, size_t);
 
 buffer
 buffer_erase(const buffer&);

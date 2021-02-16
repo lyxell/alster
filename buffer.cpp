@@ -52,12 +52,14 @@ buffer_move_up(const buffer& b, size_t n) {
 }
 
 buffer
-buffer_insert(const buffer& b, buffer_char c) {
+buffer_insert(const buffer& b, buffer_char c, size_t n) {
     auto [lines, pos] = b;
     size_t x = std::min(lines[pos.y]->size(), pos.x);
     lines[pos.y] = std::make_shared<buffer_line>(*lines[pos.y]);
-    lines[pos.y]->insert(lines[pos.y]->begin() + x, c);
-    return {lines, {x + 1, pos.y}};
+    for (size_t i = 0; i < n; i++) {
+        lines[pos.y]->insert(lines[pos.y]->begin() + x, c);
+    }
+    return {lines, {x + n, pos.y}};
 }
 
 buffer

@@ -23,7 +23,19 @@ struct state {
 };
 
 state
-update_window_size(const state& s) {
+state_enter_insert_mode(state s) {
+    s.mode = MODE_INSERT;
+    return s;
+}
+
+state
+state_enter_normal_mode(state s) {
+    s.mode = MODE_NORMAL;
+    return s;
+}
+
+state
+state_update_window_size(const state& s) {
     state next = s;
     next.window_width = COLS;
     next.window_height = LINES;
@@ -31,7 +43,7 @@ update_window_size(const state& s) {
 }
 
 state
-update_scroll(const state& s, const buffer& b) {
+state_update_scroll(const state& s, const buffer& b) {
     const auto& [lines, pos] = b;
     state next = s;
     if (pos.y < s.scroll) {
@@ -79,7 +91,8 @@ void render_cursor(const buffer& buf, const state& s) {
 }
 
 template <typename S, typename T>
-void handle_input(buffer& buf, state& s, S YYPEEK, T YYSKIP) {
+std::pair<buffer, state>
+handle_input(const buffer& b, const state& s, S YYPEEK, T YYSKIP) {
     /*!re2c
     re2c:flags:input = custom;
     re2c:define:YYCTYPE = char;
@@ -93,56 +106,59 @@ void handle_input(buffer& buf, state& s, S YYPEEK, T YYSKIP) {
     */
     if (s.mode == MODE_NORMAL) {
         /*!re2c
-        "$"  { buf = buffer_move_end_of_line(buf); return; }
-        "0"  { buf = buffer_move_start_of_line(buf); return; }
-        "A"  { buf = buffer_move_end_of_line(buf);
-               s.mode = MODE_INSERT;
-               return; }
-        "G"  { buf = buffer_move_end(buf); return; }
-        "gg" { buf = buffer_move_start(buf); return; }
-        "h"  { buf = buffer_move_left(buf, 1); return; }
-        "i"  { s.mode = MODE_INSERT; return; }
-        "j"  { buf = buffer_move_down(buf, 1); return; }
-        "k"  { buf = buffer_move_up(buf, 1); return; }
-        "l"  { buf = buffer_move_right(buf, 1); return; }
-        *    { return; }
-        null { return; }
+        "$"  { return {buffer_move_end_of_line(b), s}; }
+        "0"  { return {buffer_move_start_of_line(b), s}; }
+        "A"  { return {buffer_move_end_of_line(b),
+                       state_enter_insert_mode(s)}; }
+        "G"  { return {buffer_move_end(b), s}; }
+        "gg" { return {buffer_move_start(b), s}; }
+        "h"  { return {buffer_move_left(b, 1), s}; }
+        "i"  { return {b, state_enter_insert_mode(s)}; }
+        "j"  { return {buffer_move_down(b, 1), s}; }
+        "k"  { return {buffer_move_up(b, 1), s}; }
+        "l"  { return {buffer_move_right(b, 1), s}; }
+        *    { return {b, s}; }
+        null { return {b, s}; }
         */
     } else if (s.mode == MODE_INSERT) {
         /*!re2c
-        delete { buf = buffer_erase(buf); return; }
-        escape { s.mode = MODE_NORMAL; return; }
-        return { buf = buffer_break_line(buf); return; }
-        tab    { for (int i = 0; i < 4; i++) buf = buffer_insert(buf, ' ');
-                 return; }
-        null   { return; }
-        *      { buf = buffer_insert(buf, yych); return; }
+        delete { return {buffer_erase(b), s}; }
+        escape { return {b, state_enter_normal_mode(s)}; }
+        return { return {buffer_break_line(b), s}; }
+        tab    { return {buffer_insert(b, ' ', 4), s}; }
+        null   { return {b, s}; }
+        *      { return {buffer_insert(b, yych, 1), s}; }
         */
     }
+    return {b, s};
 }
 
-void handle_input_stdin(buffer& buf, state& s) {
+std::pair<buffer, state>
+handle_input_stdin(buffer& b, state& s) {
     char c;
     bool skip = true;
-    auto YYPEEK = [&](){
-        if (skip) {
-            c = getchar(); 
-            skip = false;
+    return handle_input(
+        b,
+        s,
+        [&](){
+            if (skip) {
+                c = getchar(); 
+                skip = false;
+            }
+            return c;
+        },
+        [&](){
+            skip = true;
         }
-        return c;
-    };
-    auto YYSKIP = [&](){
-        skip = true;
-    };
-    handle_input(buf, s, YYPEEK, YYSKIP);
+    );
 }
 
 #ifndef FUZZ
 int main(int argc, char* argv[]) {
     state s = {};
-    buffer buf = {
+    buffer b = {
         {std::make_shared<buffer_line>()},
-        {0,0}
+        {0, 0}
     };
     initscr();
     noecho();
@@ -172,15 +188,17 @@ int main(int argc, char* argv[]) {
     }*/
     while (true) {
         auto timer_start = std::chrono::high_resolution_clock::now();
-        s = update_window_size(s);
-        s = update_scroll(s, buf);
-        render(buf, s);
+        s = state_update_window_size(s);
+        s = state_update_scroll(s, b);
+        render(b, s);
         auto timer_end = std::chrono::high_resolution_clock::now();
         int timer_elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(timer_end - timer_start).count();
         mvprintw(1, COLS - 9, "%6d ms", timer_elapsed_ms);
-        render_cursor(buf, s);
+        render_cursor(b, s);
         refresh();
-        handle_input_stdin(buf, s);
+        auto [next_b, next_s] = handle_input_stdin(b, s);
+        b = next_b;
+        s = next_s;
         if (s.exiting) {
             break;
         }
