@@ -46,7 +46,7 @@ void render(const buffer& buf, const state& s) {
     const auto& [lines, pos] = buf;
     std::string str = buffer_to_string(buf);
     std::vector<buffer_char> color(str.size());
-    tokenize_c(str.c_str(), color.data());
+    tokenize(str.c_str(), color.data());
     std::vector<std::vector<buffer_char>> colors = {std::vector<buffer_char>()};
     for (size_t i = 0; i < str.size(); i++) {
         if (str[i] == '\n') {
@@ -95,6 +95,9 @@ void handle_input(buffer& buf, state& s, S YYPEEK, T YYSKIP) {
         /*!re2c
         "$"  { buf = buffer_move_end_of_line(buf); return; }
         "0"  { buf = buffer_move_start_of_line(buf); return; }
+        "A"  { buf = buffer_move_end_of_line(buf);
+               s.mode = MODE_INSERT;
+               return; }
         "G"  { buf = buffer_move_end(buf); return; }
         "gg" { buf = buffer_move_start(buf); return; }
         "h"  { buf = buffer_move_left(buf, 1); return; }
@@ -102,8 +105,8 @@ void handle_input(buffer& buf, state& s, S YYPEEK, T YYSKIP) {
         "j"  { buf = buffer_move_down(buf, 1); return; }
         "k"  { buf = buffer_move_up(buf, 1); return; }
         "l"  { buf = buffer_move_right(buf, 1); return; }
-        null { return; }
         *    { return; }
+        null { return; }
         */
     } else if (s.mode == MODE_INSERT) {
         /*!re2c

@@ -1,0 +1,32 @@
+/*!re2c
+
+c_keyword = "break"
+          | "continue"
+          | "else"
+          | "for"
+          | "return"
+          | "if"
+          | "while";
+
+c_literal = "\"" [^"\n]* "\""
+          | "true"
+          | "false"
+          | "0"
+          | [1-9][0-9]*;
+
+c_comment = "//" [^\n]* "\n"
+          | "/*" ([^*] | ("*" [^/]))* "*""/"
+          | "#" ([^\n] | "\\\n")* "\n";
+
+c_type = "FILE" "*"*
+       | "bool" "*"*
+       | "char" "*"*
+       | "int" "*"*
+       | "double" "*"*
+       | "float" "*"*
+       | "size_t" "*"*
+       | "void" "*"*;
+
+c_identifier = [a-zA-Z_][a-zA-Z_0-9]*;
+
+*/
