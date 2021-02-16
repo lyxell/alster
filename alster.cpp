@@ -2,50 +2,38 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <assert.h>
-#include <sys/ioctl.h>
 #include <string>
 #include <termios.h>
 
+#include "window.h"
 #include "buffer.h"
 #include "tokenize.h"
 #include "file.h"
 
-static struct termios orig_termios; /* In order to restore at exit.*/
+static struct termios orig_termios;
 
 void disable_raw_mode(int fd) {
-    /* Don't even check the return value as it's too late. */
     tcsetattr(fd,TCSAFLUSH,&orig_termios);
 }
 
-/* Called at exit to avoid remaining in raw mode. */
 void editor_at_exit(void) {
     disable_raw_mode(STDIN_FILENO);
 }
 
-/* Raw mode: 1960 magic shit. */
 int enable_raw_mode() {
     struct termios raw;
-
     if (!isatty(STDIN_FILENO)) goto fatal;
     atexit(editor_at_exit);
     if (tcgetattr(STDIN_FILENO,&orig_termios) == -1) goto fatal;
-
-    raw = orig_termios;  /* modify the original mode */
-    /* input modes: no break, no CR to NL, no parity check, no strip char,
-     * no start/stop output control. */
+    raw = orig_termios;
     raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
-    /* output modes - disable post processing */
     raw.c_oflag &= ~(OPOST);
-    /* control modes - set 8 bit chars */
     raw.c_cflag |= (CS8);
-    /* local modes - choing off, canonical off, no extended functions,
-     * no signal chars (^Z,^C) */
     raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
     raw.c_cc[VMIN] = 1;
     raw.c_cc[VTIME] = 0;
     if (tcsetattr(STDIN_FILENO,TCSAFLUSH,&raw) < 0) goto fatal;
     return 0;
-
 fatal:
     errno = ENOTTY;
     return -1;
@@ -76,14 +64,11 @@ enum {
 };
 
 struct state {
+    int mode;
     bool exiting;
     bool undo;
     bool persist;
     bool redo;
-    int mode;
-    size_t scroll;
-    size_t window_width;
-    size_t window_height;
 };
 
 state
@@ -116,53 +101,6 @@ state_enter_normal_mode(state s) {
     return s;
 }
 
-state
-state_update_window_size(const state& s) {
-    struct winsize ws;
-    assert(ioctl(1, TIOCGWINSZ, &ws) != -1 && ws.ws_col != 0);
-    state next = s;
-    next.window_width = ws.ws_col;
-    next.window_height = ws.ws_row;
-    return next;
-}
-
-state
-state_update_scroll(const state& s, const buffer& b) {
-    const auto& [lines, pos] = b;
-    state next = s;
-    if (pos.y < s.scroll) {
-        next.scroll = pos.y;
-    } else if (pos.y >= s.scroll + s.window_height) {
-        next.scroll = pos.y - s.window_height + 1;
-    }
-    return next;
-}
-
-void render(const buffer& buf, const state& s) {
-    static std::vector<std::shared_ptr<buffer_line>> prev_lines;
-    static size_t prev_scroll;
-    const auto& [lines, pos] = buf;
-    if (prev_lines == lines && prev_scroll == s.scroll) return;
-    prev_lines = lines;
-    prev_scroll = s.scroll;
-    for (size_t i = 0; i < s.window_height; i++) {
-        if (lines.size() > i + s.scroll) {
-            auto line = buffer_get_line(buf, i + s.scroll);
-            printf("\033[%ld;%dH%lx \033[K", (i+1), 1,
-                    (size_t) lines[i+s.scroll].get());
-            for (int j = 0; j < int(std::min(s.window_width - 13, line.size())); j++) {
-                putchar(line[j]);
-            }
-        }
-    }
-}
-
-void render_cursor(const buffer& buf, const state& s) {
-    auto [lines, pos] = buf;
-    printf("\033[%ld;%ldH", pos.y - s.scroll + 1,
-            std::min(pos.x, buffer_get_line(buf, pos.y).size()) + 14);
-}
-
 template <typename S, typename T>
 std::pair<buffer, state>
 handle_input(const buffer& b, const state& s, S YYPEEK, T YYSKIP) {
@@ -191,7 +129,6 @@ handle_input(const buffer& b, const state& s, S YYPEEK, T YYSKIP) {
         "l"  {return {buffer_move_right(b, 1), s};}
         "u"  {return {b, state_set_undo_flag(s)};}
         "r"  {return {b, state_set_redo_flag(s)};}
-        "w"  {printf("\033D"); return {b, s};}
         *    {return {b, s};}
         */
     } else if (s.mode == MODE_INSERT) {
@@ -233,6 +170,7 @@ int main(int argc, char* argv[]) {
     std::vector<buffer> history;
     std::vector<buffer> future;
     state s = {};
+    window w = {};
     buffer b = {
         {std::make_shared<buffer_line>()},
         {0, 0}
@@ -243,19 +181,20 @@ int main(int argc, char* argv[]) {
     }
     history.push_back(b);
     while (true) {
-        auto timer_start = std::chrono::high_resolution_clock::now();
-        s = state_update_window_size(s);
-        s = state_update_scroll(s, b);
-        render(b, s);
-        //refresh();
+        // auto timer_start = std::chrono::high_resolution_clock::now();
+        w = window_update_size(w);
+        w = window_update_scroll(b, w);
+        window_render(b, w);
+        /*
         auto timer_end = std::chrono::high_resolution_clock::now();
         int timer_elapsed_ms = std::chrono::duration_cast<
                 std::chrono::microseconds>(timer_end - timer_start).count();
         printf("\033[%ld;%ldH%6d",
-                s.window_height - 1,
-                s.window_width - 9,
+                w.height - 1,
+                w.width - 9,
                 timer_elapsed_ms);
-        render_cursor(b, s);
+        */
+        window_render_cursor(b, w);
         auto [next_b, next_s] = handle_input_stdin(b, s);
         /* undo/redo */
         if (next_s.redo) {

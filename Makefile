@@ -7,6 +7,7 @@ build/alster: build/alster_re2c.cpp buffer.cpp build/tokenize_re2c.cpp \
 		-I. \
 		build/alster_re2c.cpp \
 		buffer.cpp \
+		window.cpp \
 		file.cpp \
 		build/tokenize_re2c.cpp \
 		 -o $@
