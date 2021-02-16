@@ -177,7 +177,7 @@ int main(int argc, char* argv[]) {
     };
     assert(enable_raw_mode() == 0);
     if (argc > 1) {
-        file_load(argv[1]);
+        b = file_load(argv[1]);
     }
     history.push_back(b);
     while (true) {

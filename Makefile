@@ -1,7 +1,7 @@
 CXXFLAGS=-std=c++17 -Wall -Wfatal-errors -O2 -g
 
 build/alster: build/alster_re2c.cpp buffer.cpp build/tokenize_re2c.cpp \
-			  buffer.h syntax/c.re2c
+			  buffer.h syntax/c.re2c window.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS) \
 		-I. \

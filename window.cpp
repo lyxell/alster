@@ -23,8 +23,8 @@ window_render(const buffer& buf, const window& w) {
     for (size_t i = 0; i < w.height; i++) {
         if (lines.size() > i + w.scroll) {
             auto line = buffer_get_line(buf, i + w.scroll);
-            printf("\033[%ld;%dH%lx \033[K", (i+1), 1,
-                    (size_t) lines[i+w.scroll].get());
+            printf("\033[%ld;%dH%04lx \033[K", (i+1), 1,
+                    size_t(lines[i+w.scroll].get()) % 0xffff);
             for (int j = 0; j < int(std::min(w.width - 13, line.size())); j++) {
                 putchar(line[j]);
             }
@@ -35,7 +35,7 @@ window_render(const buffer& buf, const window& w) {
 void window_render_cursor(const buffer& buf, const window& w) {
     auto [lines, pos] = buf;
     printf("\033[%ld;%ldH", pos.y - w.scroll + 1,
-            std::min(pos.x, buffer_get_line(buf, pos.y).size()) + 14);
+            std::min(pos.x, buffer_get_line(buf, pos.y).size()) + 6);
 }
 window window_update_size(window w) {
     struct winsize ws;
