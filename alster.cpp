@@ -58,21 +58,24 @@ void render(const buffer& buf, const state& s) {
     for (size_t i = 0; i < s.window_height; i++) {
         move(i, 0);
         if (lines.size() > i + s.scroll) {
-            auto str = buffer_get_line(buf, i + s.scroll);
-            for (size_t j = 0; j < std::min(s.window_width, str.size()); j++) {
+            auto line = buffer_get_line(buf, i + s.scroll);
+            for (size_t j = 0; j < std::min(s.window_width, line.size()); j++) {
                 attron(COLOR_PAIR(colors[i+s.scroll][j]));
-                addch(str[j]);
+                addch(line[j]);
                 attroff(COLOR_PAIR(colors[i+s.scroll][j]));
             }
         }
         clrtoeol();
     }
-    mvprintw(0, COLS - 4, "%04d", buffer_get_line(buf, pos.y)[pos.x]);
+    if (buffer_get_line(buf, pos.y).size() > pos.x) {
+        mvprintw(0, COLS - 4, "%04d", buffer_get_line(buf, pos.y)[pos.x]);
+    }
 }
 
 void render_cursor(const buffer& buf, const state& s) {
     auto [lines, pos] = buf;
-    move(pos.y - s.scroll, pos.x);
+    move(pos.y - s.scroll,
+         std::min(pos.x, buffer_get_line(buf, pos.y).size()));
 }
 
 template <typename S, typename T>

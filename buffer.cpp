@@ -109,8 +109,14 @@ buffer_to_string(const buffer& b) {
     return s;
 }
 
-std::string
+buffer_line
 buffer_get_line(const buffer& b, size_t i) {
     auto& [lines, pos] = b;
-    return std::string(lines[i]->begin(), lines[i]->end());
+    return *lines[i];
+}
+
+buffer_line
+buffer_get_current_line(const buffer& b) {
+    auto& [lines, pos] = b;
+    return *lines[pos.y];
 }
