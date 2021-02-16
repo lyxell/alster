@@ -75,6 +75,11 @@ buffer_insert(const buffer& b, buffer_char c, size_t n) {
 buffer
 buffer_break_line(const buffer& b) {
     auto [lines, pos] = b;
+    if (pos.x == 0) {
+        lines.insert(lines.begin() + pos.y, std::make_shared<buffer_line>());
+        pos.y++;
+        return {lines, pos};
+    }
     auto line = *lines[pos.y];
     size_t x = std::min(lines[pos.y]->size(), pos.x);
     lines.erase(lines.begin() + pos.y);
