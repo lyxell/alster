@@ -1,6 +1,8 @@
 #include <sys/ioctl.h>
 #include <assert.h>
 #include "window.h"
+#include <locale>
+#include <codecvt>
 
 window window_update_scroll(const buffer& b, window w) {
     const auto& [lines, pos] = b;
@@ -14,6 +16,7 @@ window window_update_scroll(const buffer& b, window w) {
 
 void
 window_render(const buffer& buf, const window& w) {
+    static std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> cvt;
     static std::vector<std::shared_ptr<buffer_line>> prev_lines;
     static window prev_w;
     const auto& [lines, pos] = buf;
@@ -23,11 +26,17 @@ window_render(const buffer& buf, const window& w) {
     for (size_t i = 0; i < w.height; i++) {
         if (lines.size() > i + w.scroll) {
             auto line = buffer_get_line(buf, i + w.scroll);
-            printf("\033[%ld;%dH%04lx \033[K", (i+1), 1,
-                    size_t(lines[i+w.scroll].get()) % 0xffff);
+            std::u32string utf32;
             for (int j = 0; j < int(std::min(w.width - 13, line.size())); j++) {
-                putchar(line[j]);
+                if (line[j] == ' ') {
+                    utf32.push_back(u'\u00b7');
+                } else {
+                    utf32.push_back(line[j]);
+                }
             }
+            printf("\033[%ld;%dH%04lx %s\033[K", (i+1), 1,
+                    size_t(lines[i+w.scroll].get()) % 0xffff,
+                    cvt.to_bytes(utf32).c_str());
         }
     }
 }

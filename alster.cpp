@@ -10,6 +10,8 @@
 #include "tokenize.h"
 #include "file.h"
 
+const char* output = "test";
+
 static struct termios orig_termios;
 
 void disable_raw_mode(int fd) {
@@ -129,6 +131,7 @@ handle_input(const buffer& b, const state& s, S YYPEEK, T YYSKIP) {
         "l"  {return {buffer_move_right(b, 1), s};}
         "u"  {return {b, state_set_undo_flag(s)};}
         "r"  {return {b, state_set_redo_flag(s)};}
+        "s"  {file_save(output, b); return {b, s};}
         *    {return {b, s};}
         */
     } else if (s.mode == MODE_INSERT) {

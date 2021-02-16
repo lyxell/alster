@@ -19,7 +19,7 @@ struct coord {
     }
 };
 
-using buffer_char = char;
+using buffer_char = char32_t;
 using buffer_line = std::vector<buffer_char>;
 using buffer = std::pair<std::vector<std::shared_ptr<buffer_line>>,coord>;
 
