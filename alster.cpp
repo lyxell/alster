@@ -16,6 +16,9 @@ enum {
 
 struct state {
     bool exiting;
+    bool undo;
+    bool persist;
+    bool redo;
     int mode;
     int scroll;
     size_t window_width;
@@ -25,6 +28,24 @@ struct state {
 state
 state_enter_insert_mode(state s) {
     s.mode = MODE_INSERT;
+    return s;
+}
+
+state
+state_set_undo_flag(state s) {
+    s.undo = true;
+    return s;
+}
+
+state
+state_set_redo_flag(state s) {
+    s.redo = true;
+    return s;
+}
+
+state
+state_set_persist_flag(state s) {
+    s.persist = true;
     return s;
 }
 
@@ -71,6 +92,8 @@ void render(const buffer& buf, const state& s) {
         move(i, 0);
         if (lines.size() > i + s.scroll) {
             auto line = buffer_get_line(buf, i + s.scroll);
+            printw("%8x", lines[i+s.scroll].get());
+            addch(' ');
             for (size_t j = 0; j < std::min(s.window_width, line.size()); j++) {
                 attron(COLOR_PAIR(colors[i+s.scroll][j]));
                 addch(line[j]);
@@ -86,7 +109,7 @@ void render(const buffer& buf, const state& s) {
 
 void render_cursor(const buffer& buf, const state& s) {
     auto [lines, pos] = buf;
-    move(pos.y - s.scroll, std::min(pos.x, buffer_get_line(buf, pos.y).size()));
+    move(pos.y - s.scroll, std::min(pos.x, buffer_get_line(buf, pos.y).size()) + 9);
 }
 
 template <typename S, typename T>
@@ -106,21 +129,24 @@ handle_input(const buffer& b, const state& s, S YYPEEK, T YYSKIP) {
         /*!re2c
         "$"  {return {buffer_move_end_of_line(b), s};}
         "0"  {return {buffer_move_start_of_line(b), s};}
-        "A"  {return {buffer_move_end_of_line(b),state_enter_insert_mode(s)};}
+        "A"  {return {buffer_move_end_of_line(b), state_enter_insert_mode(s)};}
         "G"  {return {buffer_move_end(b), s};}
-        "dd" {return {buffer_erase_current_line(b), s};}
+        "dd" {return {buffer_erase_current_line(b), state_set_persist_flag(s)};}
         "gg" {return {buffer_move_start(b), s};}
         "h"  {return {buffer_move_left(b, 1), s};}
         "i"  {return {b, state_enter_insert_mode(s)};}
         "j"  {return {buffer_move_down(b, 1), s};}
         "k"  {return {buffer_move_up(b, 1), s};}
         "l"  {return {buffer_move_right(b, 1), s};}
+        "u"  {return {b, state_set_undo_flag(s)};}
+        "r"  {return {b, state_set_redo_flag(s)};}
         *    {return {b, s};}
         */
     } else if (s.mode == MODE_INSERT) {
         /*!re2c
         del  {return {buffer_erase(b), s};}
-        esc  {return {buffer_move_left(b, 1), state_enter_normal_mode(s)};}
+        esc  {return {buffer_move_left(b, 1),
+                      state_set_persist_flag(state_enter_normal_mode(s))};}
         ret  {return {buffer_break_line(b), s};}
         tab  {return {buffer_insert(b, ' ', 4), s};}
         nul  {return {b, s};}
@@ -152,11 +178,14 @@ handle_input_stdin(buffer& b, state& s) {
 
 #ifndef FUZZ
 int main(int argc, char* argv[]) {
+    std::vector<buffer> history;
+    std::vector<buffer> future;
     state s = {};
     buffer b = {
         {std::make_shared<buffer_line>()},
         {0, 0}
     };
+    history.push_back(b);
     initscr();
     noecho();
     cbreak();
@@ -194,8 +223,29 @@ int main(int argc, char* argv[]) {
         render_cursor(b, s);
         refresh();
         auto [next_b, next_s] = handle_input_stdin(b, s);
-        b = next_b;
-        s = next_s;
+        /* undo/redo */
+        if (next_s.redo) {
+            if (future.size()) {
+                history.push_back(b);
+                b = future.back();
+                future.pop_back();
+            }
+        } else if (next_s.undo) {
+            if (history.size()) {
+                future.push_back(b);
+                b = history.back();
+                history.pop_back();
+            }
+        } else if (next_s.persist && (!history.size() || history.back().first != next_b.first)) {
+            future.clear();
+            history.push_back(b);
+            b = next_b;
+            s = next_s;
+            s.persist = false;
+        } else {
+            b = next_b;
+            s = next_s;
+        }
         if (s.exiting) {
             break;
         }

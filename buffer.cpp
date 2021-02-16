@@ -99,6 +99,7 @@ buffer_erase(const buffer& b) {
         x = x - 1;
     } else if (y > 0) {
         x = lines[y-1]->size();
+        lines[y-1] = std::make_shared<buffer_line>(*lines[y-1]);
         lines[y-1]->insert(lines[y-1]->end(),
                            lines[y]->begin(),
                            lines[y]->end());
