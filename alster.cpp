@@ -4,12 +4,11 @@
 #include <assert.h>
 #include <sys/ioctl.h>
 #include <string>
-#include <fstream>
-#include <streambuf>
 #include <termios.h>
 
 #include "buffer.h"
 #include "tokenize.h"
+#include "file.h"
 
 static struct termios orig_termios; /* In order to restore at exit.*/
 
@@ -238,21 +237,11 @@ int main(int argc, char* argv[]) {
         {std::make_shared<buffer_line>()},
         {0, 0}
     };
-    history.push_back(b);
     assert(enable_raw_mode() == 0);
     if (argc > 1) {
-        std::ifstream t(argv[1]);
-        std::string str((std::istreambuf_iterator<char>(t)),
-                         std::istreambuf_iterator<char>());
-        for (auto c : str) {
-            if (c == '\n') {
-                b = buffer_break_line(b);
-            } else {
-                b = buffer_insert(b, c, 1);
-            }
-        }
-        b = buffer_move_start(b);
+        file_load(argv[1]);
     }
+    history.push_back(b);
     while (true) {
         auto timer_start = std::chrono::high_resolution_clock::now();
         s = state_update_window_size(s);
@@ -260,10 +249,13 @@ int main(int argc, char* argv[]) {
         render(b, s);
         //refresh();
         auto timer_end = std::chrono::high_resolution_clock::now();
-        int timer_elapsed_ms = std::chrono::duration_cast<std::chrono::microseconds>(timer_end - timer_start).count();
-        printf("\033[%ld;%ldH%6d", s.window_height - 1, s.window_width - 9, timer_elapsed_ms);
+        int timer_elapsed_ms = std::chrono::duration_cast<
+                std::chrono::microseconds>(timer_end - timer_start).count();
+        printf("\033[%ld;%ldH%6d",
+                s.window_height - 1,
+                s.window_width - 9,
+                timer_elapsed_ms);
         render_cursor(b, s);
-        //refresh();
         auto [next_b, next_s] = handle_input_stdin(b, s);
         /* undo/redo */
         if (next_s.redo) {
@@ -278,7 +270,8 @@ int main(int argc, char* argv[]) {
                 b = history.back();
                 history.pop_back();
             }
-        } else if (next_s.persist && (!history.size() || history.back().first != next_b.first)) {
+        } else if (next_s.persist && (!history.size() ||
+                              history.back().first != next_b.first)) {
             future.clear();
             history.push_back(b);
             b = next_b;
