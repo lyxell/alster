@@ -2,3 +2,4 @@ alster
 .gdb_history
 CORPUS_DIR
 fuzzer
+*_re2c.cpp
