@@ -1,17 +1,26 @@
 CXXFLAGS=-std=c++17 -Wall -Wfatal-errors -O2 -g
 LDFLAGS=-lncurses
 
-alster: alster_re2c.cpp buffer.cpp tokenize_re2c.cpp buffer.h syntax/c.re2c
+build/alster: build/alster_re2c.cpp buffer.cpp build/tokenize_re2c.cpp \
+			  buffer.h syntax/c.re2c
+	mkdir -p build
 	$(CXX) $(CXXFLAGS) \
-		alster_re2c.cpp \
+		-I. \
+		build/alster_re2c.cpp \
 		buffer.cpp \
-		tokenize_re2c.cpp \
+		build/tokenize_re2c.cpp \
 		$(LDFLAGS) -o $@
 
-fuzzer: alster.cpp buffer.cpp tokenize_c.cpp buffer.h
+build/fuzzer: alster.cpp buffer.cpp tokenize_c.cpp buffer.h
+	mkdir -p build
 	clang++ -DFUZZ -std=c++17 -g -O1 \
 		-fsanitize=fuzzer,address alster.cpp \
 		buffer.cpp tokenize.cpp $(LDFLAGS) -o $@
 
-%_re2c.cpp: %.cpp syntax/c.re2c
+build/%_re2c.cpp: %.cpp syntax/c.re2c
+	mkdir -p build
 	re2c -i $< -o $@
+
+.PHONY: clean
+clean:
+	rm -rf build

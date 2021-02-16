@@ -1,7 +1,7 @@
 #include "tokenize.h"
 #include <string.h>
 
-/*!include:re2c "../syntax/c.re2c" */
+/*!include:re2c "syntax/c.re2c" */
 
 void tokenize(const char* YYCURSOR, char* color) {
     const char* YYMARKER;
