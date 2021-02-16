@@ -86,14 +86,14 @@ buffer_erase(const buffer& b) {
     if (x > 0) {
         lines[y] = std::make_shared<buffer_line>(*lines[y]);
         lines[y]->erase(lines[y]->begin() + x - 1);
-        x--;
+        x = x - 1;
     } else if (y > 0) {
         x = lines[y-1]->size();
         lines[y-1]->insert(lines[y-1]->end(),
-                               lines[y]->begin(),
-                               lines[y]->end());
+                           lines[y]->begin(),
+                           lines[y]->end());
         lines.erase(lines.begin() + y);
-        y--;
+        y = y - 1;
     }
     return {lines, {x, y}};
 }
@@ -106,15 +106,14 @@ buffer_to_string(const buffer& b) {
         std::copy(line->begin(), line->end(), std::back_inserter(s));
         s.push_back('\n');
     }
-    // no trailing newline
     if (s.size() > 0) s.pop_back();
     return s;
 }
 
 buffer_line
-buffer_get_line(const buffer& b, size_t i) {
+buffer_get_line(const buffer& b, size_t y) {
     auto& [lines, pos] = b;
-    return *lines[i];
+    return *lines[y];
 }
 
 buffer_line
