@@ -7,7 +7,7 @@
 #include <streambuf>
 
 #include "buffer.h"
-#include "tokenize/tokenize.h"
+#include "tokenize.h"
 
 enum {
     MODE_NORMAL,
