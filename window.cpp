@@ -3,6 +3,7 @@
 #include "window.h"
 #include <locale>
 #include <codecvt>
+#include "tokenize.h"
 
 window window_update_scroll(const buffer& b, window w) {
     const auto& [lines, pos] = b;
@@ -17,12 +18,17 @@ window window_update_scroll(const buffer& b, window w) {
 void
 window_render(const buffer& buf, const window& w) {
     static std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> cvt;
-    static std::vector<std::shared_ptr<buffer_line>> prev_lines;
-    static window prev_w;
     const auto& [lines, pos] = buf;
-    if (prev_lines == lines && prev_w == w) return;
-    prev_lines = lines;
-    prev_w = w;
+    std::u32string string;
+    for (auto line : lines) {
+        std::copy(line->begin(), line->end(), std::back_inserter(string));
+        string.push_back('\n');
+    }
+    tokenize(string.c_str());
+//    if (prev_lines == lines && prev_w == w) return;
+//    prev_lines = lines;
+//    prev_w = w;
+/*
     for (size_t i = 0; i < w.height; i++) {
         if (lines.size() > i + w.scroll) {
             auto line = buffer_get_line(buf, i + w.scroll);
@@ -39,12 +45,13 @@ window_render(const buffer& buf, const window& w) {
                     cvt.to_bytes(utf32).c_str());
         }
     }
+*/
 }
 
 void window_render_cursor(const buffer& buf, const window& w) {
     auto [lines, pos] = buf;
     printf("\033[%ld;%ldH", pos.y - w.scroll + 1,
-            std::min(pos.x, buffer_get_line(buf, pos.y).size()) + 6);
+            std::min(pos.x, buffer_get_line(buf, pos.y).size()) + 1);
 }
 window window_update_size(window w) {
     struct winsize ws;

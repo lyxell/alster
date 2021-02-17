@@ -1,5 +1,8 @@
 #pragma once
 
+#include <locale>
+#include <codecvt>
+
 enum {
     TOKEN_NONE,
     TOKEN_COMMENT,
@@ -9,4 +12,4 @@ enum {
     TOKEN_TYPE,
 };
 
-void tokenize(const char*, char*);
+void tokenize(const char32_t*);

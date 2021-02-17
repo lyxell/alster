@@ -170,6 +170,7 @@ handle_input_stdin(buffer& b, state& s) {
 
 #ifndef FUZZ
 int main(int argc, char* argv[]) {
+    printf("starting...\n");
     std::vector<buffer> history;
     std::vector<buffer> future;
     state s = {};
@@ -178,17 +179,17 @@ int main(int argc, char* argv[]) {
         {std::make_shared<buffer_line>()},
         {0, 0}
     };
-    assert(enable_raw_mode() == 0);
     if (argc > 1) {
         b = file_load(argv[1]);
     }
     history.push_back(b);
+    printf("enabling raw mode...\n");
+    assert(enable_raw_mode() == 0);
     while (true) {
-        // auto timer_start = std::chrono::high_resolution_clock::now();
+        auto timer_start = std::chrono::high_resolution_clock::now();
         w = window_update_size(w);
         w = window_update_scroll(b, w);
         window_render(b, w);
-        /*
         auto timer_end = std::chrono::high_resolution_clock::now();
         int timer_elapsed_ms = std::chrono::duration_cast<
                 std::chrono::microseconds>(timer_end - timer_start).count();
@@ -196,7 +197,6 @@ int main(int argc, char* argv[]) {
                 w.height - 1,
                 w.width - 9,
                 timer_elapsed_ms);
-        */
         window_render_cursor(b, w);
         auto [next_b, next_s] = handle_input_stdin(b, s);
         /* undo/redo */

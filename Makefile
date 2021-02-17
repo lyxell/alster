@@ -1,12 +1,13 @@
 CXXFLAGS=-std=c++17 -Wall -Wfatal-errors -O2 -g
 
 build/alster: build/alster_re2c.cpp buffer.cpp build/tokenize_re2c.cpp \
-			  buffer.h syntax/c.re2c window.cpp file.cpp file.h
+			  buffer.h syntax/c.re2c window.cpp file.cpp file.h utf8.cpp
 	mkdir -p build
 	$(CXX) $(CXXFLAGS) \
 		-I. \
 		build/alster_re2c.cpp \
 		buffer.cpp \
+		utf8.cpp \
 		window.cpp \
 		file.cpp \
 		build/tokenize_re2c.cpp \
@@ -29,7 +30,7 @@ build/fuzzer: build/alster_re2c.cpp buffer.cpp build/tokenize_re2c.cpp \
 
 build/%_re2c.cpp: %.cpp syntax/c.re2c
 	mkdir -p build
-	re2c -i $< -o $@
+	re2c -W -i $< -o $@
 
 .PHONY: clean
 clean:
