@@ -6,8 +6,7 @@
 #include <codecvt>
 #include "utf8.h"
 
-buffer
-file_load(const char* filename) {
+buffer file_load(const char* filename) {
     buffer b = {
         {std::make_shared<buffer_line>()},
         {0, 0}
@@ -30,8 +29,7 @@ file_load(const char* filename) {
     return {lines, {0, 0}};
 }
 
-void
-file_save(const char* filename, const buffer& b) {
+void file_save(const char* filename, const buffer& b) {
     std::ofstream out(filename);
     for (auto line : b.first) {
         out << utf8_encode(*line);

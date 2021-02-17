@@ -57,8 +57,7 @@ struct state {
 };
 
 template <typename S, typename T>
-std::pair<buffer, state>
-handle_input(buffer b, state s, S YYPEEK, T YYSKIP) {
+std::pair<buffer, state> handle_input(buffer b, state s, S YYPEEK, T YYSKIP) {
     /*!re2c
     re2c:flags:input = custom;
     re2c:define:YYCTYPE = int;
@@ -107,8 +106,7 @@ handle_input(buffer b, state s, S YYPEEK, T YYSKIP) {
     return {b, s};
 }
 
-std::pair<buffer, state>
-handle_input_stdin(buffer b, state s) {
+std::pair<buffer, state> handle_input_stdin(buffer b, state s) {
     int c;
     bool skip = true;
     return handle_input(
@@ -128,6 +126,7 @@ handle_input_stdin(buffer b, state s) {
 }
 
 int main(int argc, char* argv[]) {
+
     std::chrono::time_point<std::chrono::high_resolution_clock> timer_start;
     std::chrono::time_point<std::chrono::high_resolution_clock> timer_end;
     std::vector<buffer> history;
@@ -153,17 +152,17 @@ int main(int argc, char* argv[]) {
         w = window_update_scroll(state.first, w);
         window_render(b, w);
 
-        /* stop timer, print time elapsed */
-        timer_end = std::chrono::high_resolution_clock::now();
-        auto timer_elapsed_ms = std::chrono::duration_cast<
-                std::chrono::microseconds>(timer_end - timer_start).count();
-        printf("\033[%ld;%ldH%6ld", w.height-1, w.width-9, timer_elapsed_ms);
-
         /* print statusline, if any */
         if (s.status) {
             printf("\033[%ld;%ldH%s\033[K", w.height, 0ul, s.status);
             s.status = NULL;
         }
+
+        /* stop timer, print time elapsed */
+        timer_end = std::chrono::high_resolution_clock::now();
+        auto timer_elapsed_ms = std::chrono::duration_cast<
+                std::chrono::microseconds>(timer_end - timer_start).count();
+        printf("\033[%ld;%ldH%6ld", w.height-1, w.width-9, timer_elapsed_ms);
 
         window_render_cursor(b, w);
 

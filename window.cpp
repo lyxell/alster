@@ -4,8 +4,7 @@
 #include "window.h"
 #include "tokenize.h"
 
-window
-window_update_scroll(const buffer& b, window w) {
+window window_update_scroll(const buffer& b, window w) {
     const auto& [lines, pos] = b;
     if (pos.y < w.scroll) {
         w.scroll = pos.y;
@@ -15,8 +14,7 @@ window_update_scroll(const buffer& b, window w) {
     return w;
 }
 
-void
-window_render(const buffer& buf, const window& w) {
+void window_render(const buffer& buf, const window& w) {
     const auto& [lines, pos] = buf;
 //    std::u32string string;
 //    for (auto line : lines) {
@@ -39,18 +37,17 @@ window_render(const buffer& buf, const window& w) {
     }
 }
 
-void
-window_render_cursor(const buffer& buf, const window& w) {
+void window_render_cursor(const buffer& buf, const window& w) {
     const auto& [lines, pos] = buf;
     printf("\033[%ld;%ldH", pos.y - w.scroll + 1,
             std::min(pos.x, buffer_get_line(buf, pos.y).size()) + 9);
 }
 
-window
-window_update_size(window w) {
+window window_update_size(window w) {
     struct winsize ws;
     assert(ioctl(1, TIOCGWINSZ, &ws) != -1 && ws.ws_col != 0);
     w.width = ws.ws_col;
     w.height = ws.ws_row;
     return w;
 }
+
