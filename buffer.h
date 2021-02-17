@@ -20,33 +20,33 @@ struct coord {
 };
 
 using buffer_char = char32_t;
-using buffer_line = std::vector<buffer_char>;
+using buffer_line = std::u32string;
 using buffer = std::pair<std::vector<std::shared_ptr<buffer_line>>,coord>;
 
 
 buffer
-buffer_move_left(const buffer&, size_t);
+buffer_move_left(buffer, size_t);
 
 buffer
-buffer_move_right(const buffer&, size_t);
+buffer_move_right(buffer, size_t);
 
 buffer
-buffer_move_down(const buffer&, size_t);
+buffer_move_down(buffer, size_t);
 
 buffer
-buffer_move_up(const buffer&, size_t);
+buffer_move_up(buffer, size_t);
 
 buffer
-buffer_insert(const buffer&, buffer_char, size_t);
+buffer_insert(buffer, buffer_char, size_t);
 
 buffer
-buffer_erase(const buffer&);
+buffer_erase(buffer);
 
 std::string
 buffer_to_string(const buffer&);
 
 buffer
-buffer_break_line(const buffer&);
+buffer_break_line(buffer);
 
 buffer_line
 buffer_get_line(const buffer&, size_t);

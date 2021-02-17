@@ -12,13 +12,10 @@ file_load(const char* filename) {
         {std::make_shared<buffer_line>()},
         {0, 0}
     };
-    printf("decoding...\n");
     std::ifstream t(filename);
     std::string str((std::istreambuf_iterator<char>(t)),
                      std::istreambuf_iterator<char>());
     auto u32s = utf8_decode(str);
-    printf("decoding done...\n");
-    printf("building buffer...\n");
     std::vector<std::shared_ptr<buffer_line>> lines;
     buffer_line line;
     for (char32_t c : u32s) {
@@ -30,7 +27,6 @@ file_load(const char* filename) {
         }
     }
     b = buffer_move_start(b);
-    printf("building buffer done...\n");
     return {lines, {0, 0}};
 }
 

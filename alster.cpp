@@ -105,7 +105,7 @@ state_enter_normal_mode(state s) {
 
 template <typename S, typename T>
 std::pair<buffer, state>
-handle_input(const buffer& b, const state& s, S YYPEEK, T YYSKIP) {
+handle_input(buffer b, const state& s, S YYPEEK, T YYSKIP) {
     /*!re2c
     re2c:flags:input = custom;
     re2c:define:YYCTYPE = char;
@@ -124,11 +124,11 @@ handle_input(const buffer& b, const state& s, S YYPEEK, T YYSKIP) {
         "G"  {return {buffer_move_end(b), s};}
         "dd" {return {buffer_erase_current_line(b), state_set_persist_flag(s)};}
         "gg" {return {buffer_move_start(b), s};}
-        "h"  {return {buffer_move_left(b, 1), s};}
+        "h"  {return {buffer_move_left(std::move(b), 1), s};}
         "i"  {return {b, state_enter_insert_mode(s)};}
-        "j"  {return {buffer_move_down(b, 1), s};}
-        "k"  {return {buffer_move_up(b, 1), s};}
-        "l"  {return {buffer_move_right(b, 1), s};}
+        "j"  {return {buffer_move_down(std::move(b), 1), s};}
+        "k"  {return {buffer_move_up(std::move(b), 1), s};}
+        "l"  {return {buffer_move_right(std::move(b), 1), s};}
         "u"  {return {b, state_set_undo_flag(s)};}
         "r"  {return {b, state_set_redo_flag(s)};}
         "s"  {file_save(output, b); return {b, s};}
@@ -136,24 +136,24 @@ handle_input(const buffer& b, const state& s, S YYPEEK, T YYSKIP) {
         */
     } else if (s.mode == MODE_INSERT) {
         /*!re2c
-        del  {return {buffer_erase(b), s};}
+        del  {return {buffer_erase(std::move(b)), s};}
         esc  {return {buffer_move_left(b, 1),
                       state_set_persist_flag(state_enter_normal_mode(s))};}
-        ret  {return {buffer_break_line(b), s};}
+        ret  {return {buffer_break_line(std::move(b)), s};}
         tab  {return {buffer_insert(b, ' ', 4), s};}
         nul  {return {b, s};}
-        *    {return {buffer_insert(b, yych, 1), s};}
+        *    {return {buffer_insert(std::move(b), yych, 1), s};}
         */
     }
     return {b, s};
 }
 
 std::pair<buffer, state>
-handle_input_stdin(buffer& b, state& s) {
+handle_input_stdin(buffer b, state& s) {
     char c;
     bool skip = true;
     return handle_input(
-        b,
+        std::move(b),
         s,
         [&](){
             if (skip) {
@@ -170,7 +170,7 @@ handle_input_stdin(buffer& b, state& s) {
 
 #ifndef FUZZ
 int main(int argc, char* argv[]) {
-    printf("starting...\n");
+    assert(enable_raw_mode() == 0);
     std::vector<buffer> history;
     std::vector<buffer> future;
     state s = {};
@@ -183,11 +183,9 @@ int main(int argc, char* argv[]) {
         b = file_load(argv[1]);
     }
     history.push_back(b);
-    printf("enabling raw mode...\n");
-    assert(enable_raw_mode() == 0);
+    w = window_update_size(w);
     while (true) {
         auto timer_start = std::chrono::high_resolution_clock::now();
-        w = window_update_size(w);
         w = window_update_scroll(b, w);
         window_render(b, w);
         auto timer_end = std::chrono::high_resolution_clock::now();
@@ -198,8 +196,12 @@ int main(int argc, char* argv[]) {
                 w.width - 9,
                 timer_elapsed_ms);
         window_render_cursor(b, w);
-        auto [next_b, next_s] = handle_input_stdin(b, s);
+        auto [next_b, next_s] = handle_input_stdin(std::move(b), s);
+        timer_start = std::chrono::high_resolution_clock::now();
         /* undo/redo */
+        b = std::move(next_b);
+        s = std::move(next_s);
+        /*
         if (next_s.redo) {
             if (future.size()) {
                 history.push_back(b);
@@ -222,10 +224,14 @@ int main(int argc, char* argv[]) {
         } else {
             b = next_b;
             s = next_s;
-        }
-        if (s.exiting) {
-            break;
-        }
+        }*/
+        timer_end = std::chrono::high_resolution_clock::now();
+        timer_elapsed_ms = std::chrono::duration_cast<
+                std::chrono::microseconds>(timer_end - timer_start).count();
+        printf("\033[%ld;%ldH%6d",
+                w.height - 2,
+                w.width - 9,
+                timer_elapsed_ms);
     }
     return 0;
 }

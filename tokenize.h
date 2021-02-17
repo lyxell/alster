@@ -1,8 +1,5 @@
 #pragma once
 
-#include <locale>
-#include <codecvt>
-
 enum {
     TOKEN_NONE,
     TOKEN_COMMENT,
