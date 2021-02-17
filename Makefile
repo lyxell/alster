@@ -1,4 +1,4 @@
-CXXFLAGS=-std=c++17 -Wall -Wfatal-errors -O2 -g
+CXXFLAGS=-std=c++17 -flto -Wall -Wfatal-errors -O2 -march=native -g
 
 build/alster: build/alster_re2c.cpp buffer.cpp build/tokenize_re2c.cpp \
 			  buffer.h syntax/c.re2c window.cpp file.cpp file.h utf8.cpp

@@ -118,12 +118,14 @@ handle_input(buffer b, const state& s, S YYPEEK, T YYSKIP) {
     */
     if (s.mode == MODE_NORMAL) {
         /*!re2c
-        "$"  {return {buffer_move_end_of_line(b), s};}
-        "0"  {return {buffer_move_start_of_line(b), s};}
-        "A"  {return {buffer_move_end_of_line(b), state_enter_insert_mode(s)};}
-        "G"  {return {buffer_move_end(b), s};}
-        "dd" {return {buffer_erase_current_line(b), state_set_persist_flag(s)};}
-        "gg" {return {buffer_move_start(b), s};}
+        "$"  {return {buffer_move_end_of_line(std::move(b)), s};}
+        "0"  {return {buffer_move_start_of_line(std::move(b)), s};}
+        "A"  {return {buffer_move_end_of_line(std::move(b)),
+                      state_enter_insert_mode(s)};}
+        "G"  {return {buffer_move_end(std::move(b)), s};}
+        "dd" {return {buffer_erase_current_line(std::move(b)),
+                      state_set_persist_flag(s)};}
+        "gg" {return {buffer_move_start(std::move(b)), s};}
         "h"  {return {buffer_move_left(std::move(b), 1), s};}
         "i"  {return {b, state_enter_insert_mode(s)};}
         "j"  {return {buffer_move_down(std::move(b), 1), s};}
@@ -157,7 +159,7 @@ handle_input_stdin(buffer b, state& s) {
         s,
         [&](){
             if (skip) {
-                c = getchar();
+                c = getchar_unlocked();
                 skip = false;
             }
             return c;
@@ -182,22 +184,24 @@ int main(int argc, char* argv[]) {
     if (argc > 1) {
         b = file_load(argv[1]);
     }
-    history.push_back(b);
     w = window_update_size(w);
+    std::chrono::time_point<std::chrono::high_resolution_clock> timer_start;
+    std::chrono::time_point<std::chrono::high_resolution_clock> timer_end;
     while (true) {
-        auto timer_start = std::chrono::high_resolution_clock::now();
         w = window_update_scroll(b, w);
         window_render(b, w);
-        auto timer_end = std::chrono::high_resolution_clock::now();
-        int timer_elapsed_ms = std::chrono::duration_cast<
+        window_render_cursor(b, w);
+        timer_end = std::chrono::high_resolution_clock::now();
+        auto timer_elapsed_ms = std::chrono::duration_cast<
                 std::chrono::microseconds>(timer_end - timer_start).count();
-        printf("\033[%ld;%ldH%6d",
+        printf("\033[%ld;%ldH%6ld",
                 w.height - 1,
                 w.width - 9,
                 timer_elapsed_ms);
         window_render_cursor(b, w);
         auto [next_b, next_s] = handle_input_stdin(std::move(b), s);
         timer_start = std::chrono::high_resolution_clock::now();
+//        timer_start = std::chrono::high_resolution_clock::now();
         /* undo/redo */
         b = std::move(next_b);
         s = std::move(next_s);
@@ -225,6 +229,7 @@ int main(int argc, char* argv[]) {
             b = next_b;
             s = next_s;
         }*/
+        /*
         timer_end = std::chrono::high_resolution_clock::now();
         timer_elapsed_ms = std::chrono::duration_cast<
                 std::chrono::microseconds>(timer_end - timer_start).count();
@@ -232,6 +237,7 @@ int main(int argc, char* argv[]) {
                 w.height - 2,
                 w.width - 9,
                 timer_elapsed_ms);
+        */
     }
     return 0;
 }

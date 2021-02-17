@@ -42,9 +42,6 @@ buffer_insert(buffer, buffer_char, size_t);
 buffer
 buffer_erase(buffer);
 
-std::string
-buffer_to_string(const buffer&);
-
 buffer
 buffer_break_line(buffer);
 
@@ -52,20 +49,20 @@ buffer_line
 buffer_get_line(const buffer&, size_t);
 
 buffer
-buffer_move_start(const buffer&);
+buffer_move_start(buffer);
 
 buffer
-buffer_move_end(const buffer&);
+buffer_move_end(buffer);
 
 buffer
-buffer_move_start_of_line(const buffer&);
+buffer_move_start_of_line(buffer);
 
 buffer
-buffer_move_end_of_line(const buffer&);
+buffer_move_end_of_line(buffer);
 
 buffer_line
 buffer_get_current_line(const buffer&);
 
 buffer
-buffer_erase_current_line(const buffer&);
+buffer_erase_current_line(buffer);
 
