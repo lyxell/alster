@@ -3,13 +3,7 @@
 #include <assert.h>
 #include "window.h"
 #include "tokenize.h"
-
-#define COLOR_RED "\033[31m"
-#define COLOR_GREEN "\033[32m"
-#define COLOR_YELLOW "\033[33m"
-#define COLOR_BLUE "\033[34m"
-#define COLOR_GREY "\033[90m"
-#define COLOR_RESET "\033[0m"
+#include "colors.h"
 
 std::vector<int> ttkn(const char32_t* YYCURSOR) {
     std::vector<int> tokens;
@@ -121,19 +115,19 @@ void window_render(const buffer& buf, const window& w) {
                 s += ch;
                 switch (*ptr) {
                     case TOKEN_LITERAL:
-                        printf(COLOR_YELLOW);
+                        set_color(COLOR_YELLOW);
                         break;
                     case TOKEN_KEYWORD:
-                        printf(COLOR_GREEN);
+                        set_color(COLOR_GREEN);
                         break;
                     case TOKEN_TYPE:
-                        printf(COLOR_BLUE);
+                        set_color(COLOR_CYAN);
                         break;
                     default:
                         break;
                 }
                 printf(utf8_encode(s).c_str());
-                printf(COLOR_RESET);
+                set_color(COLOR_RESET);
             }
             x++;
             ptr++;

@@ -1,0 +1,23 @@
+enum {
+    COLOR_RESET = 0,
+    COLOR_BLACK = 30,
+    COLOR_RED,
+    COLOR_GREEN,
+    COLOR_YELLOW,
+    COLOR_BLUE,
+    COLOR_MAGENTA,
+    COLOR_CYAN,
+    COLOR_WHITE,
+    COLOR_BRIGHT_BLACK = 90,
+    COLOR_BRIGHT_RED,
+    COLOR_BRIGHT_GREEN,
+    COLOR_BRIGHT_YELLOW,
+    COLOR_BRIGHT_BLUE,
+    COLOR_BRIGHT_MAGENTA,
+    COLOR_BRIGHT_CYAN,
+    COLOR_BRIGHT_WHITE,
+};
+
+void set_color(int color) {
+    printf("\033[%dm", color);
+}
