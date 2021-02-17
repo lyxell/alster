@@ -4,6 +4,83 @@
 #include "window.h"
 #include "tokenize.h"
 
+#define COLOR_RED "\033[31m"
+#define COLOR_GREEN "\033[32m"
+#define COLOR_YELLOW "\033[33m"
+#define COLOR_BLUE "\033[34m"
+#define COLOR_GREY "\033[90m"
+#define COLOR_RESET "\033[0m"
+
+std::vector<int> ttkn(const char32_t* YYCURSOR) {
+    std::vector<int> tokens;
+    const char32_t* YYMARKER;
+    for (;;) {
+        auto token_start = YYCURSOR;
+        /*!re2c
+        re2c:define:YYCTYPE = char32_t;
+        re2c:yyfill:enable = 0;
+        re2c:flags:8 = 0;
+        re2c:flags:u = 1;
+
+        c_keyword = "break"
+                  | "continue"
+                  | "else"
+                  | "for"
+                  | "return"
+                  | "if"
+                  | "while";
+
+        c_literal = "\"" [^"\n\x00]* "\""
+                  | "true"
+                  | "false"
+                  | "0"
+                  | [1-9][0-9]*;
+
+        c_comment = "//" [^\n\x00]* "\n";
+
+        c_type = "FILE" "*"*
+               | "bool" "*"*
+               | "char" "*"*
+               | "int" "*"*
+               | "double" "*"*
+               | "const"
+               | "float" "*"*
+               | "size_t" "*"*
+               | "void" "*"*;
+
+        c_identifier = [a-zA-Z_][a-zA-Z_0-9]*;
+
+        end = "\x00";
+
+        end          { return tokens; }
+        *            { assert(YYCURSOR - token_start == 1);
+                       tokens.push_back(TOKEN_NONE);
+                       continue; }
+        c_literal    { while (token_start < YYCURSOR) {
+                            tokens.push_back(TOKEN_LITERAL);
+                            token_start++;
+                       };
+                       continue; }
+        c_type       { while (token_start < YYCURSOR) {
+                            tokens.push_back(TOKEN_TYPE);
+                            token_start++;
+                       };
+                       continue; }
+        c_keyword    { while (token_start < YYCURSOR) {
+                            tokens.push_back(TOKEN_KEYWORD);
+                            token_start++;
+                       };
+                       continue; }
+        c_identifier { while (token_start < YYCURSOR) {
+                            tokens.push_back(TOKEN_IDENTIFIER);
+                            token_start++;
+                       };
+                       continue; }
+        */
+    }
+    return tokens;
+}
+
 window window_update_scroll(const buffer& b, window w) {
     const auto& [lines, pos] = b;
     if (pos.y < w.scroll) {
@@ -16,26 +93,48 @@ window window_update_scroll(const buffer& b, window w) {
 
 void window_render(const buffer& buf, const window& w) {
     const auto& [lines, pos] = buf;
-//    std::u32string string;
-//    for (auto line : lines) {
-//        string += *line;
-//        string += '\n';
-//    }
-//    }
-//    tokenize(string.c_str());
-//    if (prev_lines == lines && prev_w == w) return;
-//    prev_lines = lines;
-//    prev_w = w;
+    /* create windowframe and tokens */
+    std::vector<buffer_line> windowframe;
+    std::u32string tokens;
     for (size_t i = 0; i < w.height; i++) {
         if (lines.size() > i + w.scroll) {
-            auto line = buffer_get_line(buf, i + w.scroll);
-            printf("\033[%ld;%dH%04lx %02ld %s\033[K", (i+1), 1,
-                    size_t(lines[i+w.scroll].get()) % 0xffff,
-                    lines[i+w.scroll].use_count(),
-                    utf8_encode(line).c_str());
-        } else {
-            printf("\033[%ld;%dH\033[K", (i+1), 1);
+            windowframe.push_back(buffer_get_line(buf, i + w.scroll));
+            tokens += windowframe.back();
+            tokens += '\n';
         }
+    }
+    auto tokenstr = ttkn(tokens.c_str());
+    auto ptr = tokenstr.data();
+    /* do render */
+    size_t y = 0;
+    for (auto line : windowframe) {
+        /* clear line */
+        printf("\033[%ld;%dH%04lx %02ld\033[K ", (y+1), 1,
+                size_t(lines[y+w.scroll].get()) % 0xffff,
+                lines[y+w.scroll].use_count());
+        /* draw chars in line */
+        for (auto ch : line) {
+            std::u32string s;
+            s += ch;
+            switch (*ptr) {
+                case TOKEN_LITERAL:
+                    printf(COLOR_YELLOW);
+                    break;
+                case TOKEN_KEYWORD:
+                    printf(COLOR_GREEN);
+                    break;
+                case TOKEN_TYPE:
+                    printf(COLOR_BLUE);
+                    break;
+                default:
+                    break;
+            }
+            printf(utf8_encode(s).c_str());
+            ptr++;
+            printf(COLOR_RESET);
+        }
+        y++;
+        ptr++;
     }
 }
 
