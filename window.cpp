@@ -19,8 +19,9 @@ window_render(const buffer& buf, const window& w) {
     const auto& [lines, pos] = buf;
 //    std::u32string string;
 //    for (auto line : lines) {
-//        std::copy(line->begin(), line->end(), std::back_inserter(string));
-//        string.push_back('\n');
+//        string += *line;
+//        string += '\n';
+//    }
 //    }
 //    tokenize(string.c_str());
 //    if (prev_lines == lines && prev_w == w) return;
