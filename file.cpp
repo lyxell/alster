@@ -32,15 +32,10 @@ file_load(const char* filename) {
 
 void
 file_save(const char* filename, const buffer& b) {
-    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> cvt;
-    std::string utf8;
-    for (auto line : b.first) {
-        auto bytes = cvt.to_bytes(std::u32string(line->begin(), line->end()));
-        for (auto b : bytes)
-            utf8.push_back(b);
-        utf8.push_back('\n');
-    }
     std::ofstream out(filename);
-    out << utf8;
+    for (auto line : b.first) {
+        out << utf8_encode(*line);
+        out << '\n';
+    }
     out.close();
 }

@@ -11,6 +11,7 @@
 #include "file.h"
 
 const char* output = "test";
+const char* MESSAGE_COMMAND_NOT_FOUND = "No such command.";
 
 static struct termios orig_termios;
 
@@ -42,25 +43,6 @@ fatal:
 }
 
 enum {
-    COL_BLACK,
-    COL_RED,
-    COL_GREEN,
-    COL_YELLOW,
-    COL_BLUE,
-    COL_PURPLE,
-    COL_CYAN,
-    COL_WHITE,
-    COL_BLACK_LIGHT,
-    COL_RED_LIGHT,
-    COL_GREEN_LIGHT,
-    COL_YELLOW_LIGHT,
-    COL_BLUE_LIGHT,
-    COL_PURPLE_LIGHT,
-    COL_CYAN_LIGHT,
-    COL_WHITE_LIGHT
-};
-
-enum {
     MODE_NORMAL,
     MODE_INSERT
 };
@@ -69,46 +51,17 @@ struct state {
     int mode;
     bool exiting;
     bool undo;
-    bool persist;
+    bool checkpoint;
     bool redo;
+    const char* status;
 };
-
-state
-state_enter_insert_mode(state s) {
-    s.mode = MODE_INSERT;
-    return s;
-}
-
-state
-state_set_undo_flag(state s) {
-    s.undo = true;
-    return s;
-}
-
-state
-state_set_redo_flag(state s) {
-    s.redo = true;
-    return s;
-}
-
-state
-state_set_persist_flag(state s) {
-    s.persist = true;
-    return s;
-}
-
-state
-state_enter_normal_mode(state s) {
-    s.mode = MODE_NORMAL;
-    return s;
-}
 
 template <typename S, typename T>
 std::pair<buffer, state>
-handle_input(buffer b, const state& s, S YYPEEK, T YYSKIP) {
+handle_input(buffer b, state s, S YYPEEK, T YYSKIP) {
     /*!re2c
     re2c:flags:input = custom;
-    re2c:define:YYCTYPE = char;
+    re2c:define:YYCTYPE = int;
     re2c:yyfill:enable = 0;
     nul = "\x00";
     esc = "\x1b";
@@ -120,30 +73,34 @@ handle_input(buffer b, const state& s, S YYPEEK, T YYSKIP) {
         /*!re2c
         "$"  {return {buffer_move_end_of_line(std::move(b)), s};}
         "0"  {return {buffer_move_start_of_line(std::move(b)), s};}
-        "A"  {return {buffer_move_end_of_line(std::move(b)),
-                      state_enter_insert_mode(s)};}
+        "A"  {s.mode = MODE_INSERT;
+              return {buffer_move_end_of_line(std::move(b)), s};}
         "G"  {return {buffer_move_end(std::move(b)), s};}
-        "dd" {return {buffer_erase_current_line(std::move(b)),
-                      state_set_persist_flag(s)};}
+        "dd" {s.checkpoint = true;
+              return {buffer_erase_current_line(std::move(b)), s};}
         "gg" {return {buffer_move_start(std::move(b)), s};}
         "h"  {return {buffer_move_left(std::move(b), 1), s};}
-        "i"  {return {b, state_enter_insert_mode(s)};}
+        "i"  {s.mode = MODE_INSERT;
+              return {std::move(b), s};}
         "j"  {return {buffer_move_down(std::move(b), 1), s};}
         "k"  {return {buffer_move_up(std::move(b), 1), s};}
         "l"  {return {buffer_move_right(std::move(b), 1), s};}
-        "u"  {return {b, state_set_undo_flag(s)};}
-        "r"  {return {b, state_set_redo_flag(s)};}
-        "s"  {file_save(output, b); return {b, s};}
-        *    {return {b, s};}
+        "u"  {s.undo = true;
+              return {std::move(b), s};}
+        "r"  {s.redo = true;
+              return {std::move(b), s};}
+        "s"  {file_save(output, b); return {std::move(b), s};}
+        *    {s.status = MESSAGE_COMMAND_NOT_FOUND; return {std::move(b), s};}
         */
     } else if (s.mode == MODE_INSERT) {
         /*!re2c
         del  {return {buffer_erase(std::move(b)), s};}
-        esc  {return {buffer_move_left(std::move(b), 1),
-                      state_set_persist_flag(state_enter_normal_mode(s))};}
+        esc  {s.checkpoint = true;
+              s.mode = MODE_NORMAL;
+              return {buffer_move_left(std::move(b), 1), s};}
         ret  {return {buffer_break_line(std::move(b)), s};}
         tab  {return {buffer_insert(std::move(b), ' ', 4), s};}
-        nul  {return {b, s};}
+        nul  {return {std::move(b), s};}
         *    {return {buffer_insert(std::move(b), yych, 1), s};}
         */
     }
@@ -151,15 +108,15 @@ handle_input(buffer b, const state& s, S YYPEEK, T YYSKIP) {
 }
 
 std::pair<buffer, state>
-handle_input_stdin(buffer b, state& s) {
-    char c;
+handle_input_stdin(buffer b, state s) {
+    int c;
     bool skip = true;
     return handle_input(
         std::move(b),
         s,
         [&](){
             if (skip) {
-                c = getchar_unlocked();
+                c = getchar();
                 skip = false;
             }
             return c;
@@ -170,98 +127,70 @@ handle_input_stdin(buffer b, state& s) {
     );
 }
 
-#ifndef FUZZ
 int main(int argc, char* argv[]) {
-    assert(enable_raw_mode() == 0);
+    std::chrono::time_point<std::chrono::high_resolution_clock> timer_start;
+    std::chrono::time_point<std::chrono::high_resolution_clock> timer_end;
     std::vector<buffer> history;
     std::vector<buffer> future;
-    state s = {};
-    window w = {};
-    buffer b = {
-        {std::make_shared<buffer_line>()},
-        {0, 0}
+    window w;
+    std::pair<buffer,state> state = {
+        {{std::make_shared<buffer_line>()},{0, 0}},
+        {}
     };
+    auto& [b, s] = state;
     if (argc > 1) {
         b = file_load(argv[1]);
     }
-    w = window_update_size(w);
-    std::chrono::time_point<std::chrono::high_resolution_clock> timer_start;
-    std::chrono::time_point<std::chrono::high_resolution_clock> timer_end;
+
+    history.push_back(b);
+
+    assert(enable_raw_mode() == 0);
+
     while (true) {
-        w = window_update_scroll(b, w);
+
+        /* render main window */
+        w = window_update_size(w);
+        w = window_update_scroll(state.first, w);
         window_render(b, w);
-        window_render_cursor(b, w);
+
+        /* stop timer, print time elapsed */
         timer_end = std::chrono::high_resolution_clock::now();
         auto timer_elapsed_ms = std::chrono::duration_cast<
                 std::chrono::microseconds>(timer_end - timer_start).count();
-        printf("\033[%ld;%ldH%6ld",
-                w.height - 1,
-                w.width - 9,
-                timer_elapsed_ms);
+        printf("\033[%ld;%ldH%6ld", w.height-1, w.width-9, timer_elapsed_ms);
+
+        /* print statusline, if any */
+        if (s.status) {
+            printf("\033[%ld;%ldH%s\033[K", w.height, 0ul, s.status);
+            s.status = NULL;
+        }
+
         window_render_cursor(b, w);
-        auto [next_b, next_s] = handle_input_stdin(std::move(b), s);
-        timer_start = std::chrono::high_resolution_clock::now();
-//        timer_start = std::chrono::high_resolution_clock::now();
-        /* undo/redo */
-        b = std::move(next_b);
-        s = std::move(next_s);
-        /*
-        if (next_s.redo) {
-            if (future.size()) {
-                history.push_back(b);
-                b = future.back();
-                future.pop_back();
-            }
-        } else if (next_s.undo) {
-            if (history.size()) {
-                future.push_back(b);
+
+        /* handle user input */
+        state = handle_input_stdin(std::move(b), s);
+
+        /* handle save history */
+        if (s.checkpoint) {
+            history.push_back(b);
+            s.checkpoint = false;
+        }
+
+        /* handle undo */
+        if (s.undo) {
+            if (history.empty()) {
+                s.status = "History empty!";
+            } else {
                 b = history.back();
                 history.pop_back();
             }
-        } else if (next_s.persist && (!history.size() ||
-                              history.back().first != next_b.first)) {
-            future.clear();
-            history.push_back(b);
-            b = next_b;
-            s = next_s;
-            s.persist = false;
-        } else {
-            b = next_b;
-            s = next_s;
-        }*/
-        /*
-        timer_end = std::chrono::high_resolution_clock::now();
-        timer_elapsed_ms = std::chrono::duration_cast<
-                std::chrono::microseconds>(timer_end - timer_start).count();
-        printf("\033[%ld;%ldH%6d",
-                w.height - 2,
-                w.width - 9,
-                timer_elapsed_ms);
-        */
-    }
-    return 0;
-}
-#else
-extern "C"
-int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
-    state s = {};
-    buffer buf = {
-        {std::make_shared<buffer_line>()},
-        {0,0}
-    };
-    size_t curr = 0;
-    auto YYPEEK = [&](){
-        return data[curr];
-    };
-    auto YYSKIP = [&](){
-        if (curr + 1 < size) {
-            curr++;
+            s.undo = false;
         }
-    };
-    while (true) {
-        handle_input(buf, s, YYPEEK, YYSKIP);
-        if (curr + 1 >= size) break;
+
+        /* start timer */
+        timer_start = std::chrono::high_resolution_clock::now();
+
     }
     return 0;
 }
-#endif
+
