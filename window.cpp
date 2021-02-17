@@ -34,6 +34,7 @@ std::vector<int> ttkn(const char32_t* YYCURSOR) {
                   | "true"
                   | "false"
                   | "0"
+                  | "NULL"
                   | [1-9][0-9]*;
 
         c_comment = "//" [^\n\x00]* "\n";
@@ -113,25 +114,29 @@ void window_render(const buffer& buf, const window& w) {
                 size_t(lines[y+w.scroll].get()) % 0xffff,
                 lines[y+w.scroll].use_count());
         /* draw chars in line */
+        size_t x = 8;
         for (auto ch : line) {
-            std::u32string s;
-            s += ch;
-            switch (*ptr) {
-                case TOKEN_LITERAL:
-                    printf(COLOR_YELLOW);
-                    break;
-                case TOKEN_KEYWORD:
-                    printf(COLOR_GREEN);
-                    break;
-                case TOKEN_TYPE:
-                    printf(COLOR_BLUE);
-                    break;
-                default:
-                    break;
+            if (x < w.width) {
+                std::u32string s;
+                s += ch;
+                switch (*ptr) {
+                    case TOKEN_LITERAL:
+                        printf(COLOR_YELLOW);
+                        break;
+                    case TOKEN_KEYWORD:
+                        printf(COLOR_GREEN);
+                        break;
+                    case TOKEN_TYPE:
+                        printf(COLOR_BLUE);
+                        break;
+                    default:
+                        break;
+                }
+                printf(utf8_encode(s).c_str());
+                printf(COLOR_RESET);
             }
-            printf(utf8_encode(s).c_str());
+            x++;
             ptr++;
-            printf(COLOR_RESET);
         }
         y++;
         ptr++;

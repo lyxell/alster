@@ -49,7 +49,7 @@ enum {
 
 struct state {
     int mode;
-    bool exiting;
+    bool exit;
     bool undo;
     bool redo;
     const char* status;
@@ -97,6 +97,8 @@ editor handle_input(buffer b, state s,
         "u"  {s.undo = true;
               return {std::move(b), s};}
         "r"  {s.redo = true;
+              return {std::move(b), s};}
+        "q"  {s.exit = true;
               return {std::move(b), s};}
         "s"  {file_save(output, b); return {std::move(b), s};}
         *    {s.status = MESSAGE_COMMAND_NOT_FOUND; return {std::move(b), s};}
@@ -178,6 +180,10 @@ int main(int argc, char* argv[]) {
 
         /* handle user input */
         ed = handle_input_stdin(std::move(b), s, history, future);
+
+        if (s.exit) {
+            break;
+        }
 
         /* handle undo */
         if (s.undo) {
