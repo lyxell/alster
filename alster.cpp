@@ -139,10 +139,10 @@ handle_input(buffer b, const state& s, S YYPEEK, T YYSKIP) {
     } else if (s.mode == MODE_INSERT) {
         /*!re2c
         del  {return {buffer_erase(std::move(b)), s};}
-        esc  {return {buffer_move_left(b, 1),
+        esc  {return {buffer_move_left(std::move(b), 1),
                       state_set_persist_flag(state_enter_normal_mode(s))};}
         ret  {return {buffer_break_line(std::move(b)), s};}
-        tab  {return {buffer_insert(b, ' ', 4), s};}
+        tab  {return {buffer_insert(std::move(b), ' ', 4), s};}
         nul  {return {b, s};}
         *    {return {buffer_insert(std::move(b), yych, 1), s};}
         */
