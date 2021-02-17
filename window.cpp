@@ -33,6 +33,8 @@ void window_render(const buffer& buf, const window& w) {
                     size_t(lines[i+w.scroll].get()) % 0xffff,
                     lines[i+w.scroll].use_count(),
                     utf8_encode(line).c_str());
+        } else {
+            printf("\033[%ld;%dH\033[K", (i+1), 1);
         }
     }
 }

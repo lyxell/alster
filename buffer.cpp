@@ -79,17 +79,18 @@ buffer buffer_break_line(buffer b) {
         pos.y++;
     } else {
         auto line = *lines[pos.y];
-        size_t x = std::min(lines[pos.y]->size(), pos.x);
+        pos.x = std::min(lines[pos.y]->size(), pos.x);
         lines.erase(lines.begin() + pos.y);
         lines.insert(lines.begin() + pos.y,
                         std::make_shared<buffer_line>(
-                                    line.begin() + x,
+                                    line.begin() + pos.x,
                                     line.end()));
         lines.insert(lines.begin() + pos.y,
                         std::make_shared<buffer_line>(
                                     line.begin(),
-                                    line.begin() + x));
+                                    line.begin() + pos.x));
         pos.y++;
+        pos.x = 0;
     }
     return b;
 }

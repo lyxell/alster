@@ -51,13 +51,18 @@ struct state {
     int mode;
     bool exiting;
     bool undo;
-    bool checkpoint;
     bool redo;
     const char* status;
+    window win;
 };
 
+using editor = std::pair<buffer, state>;
+
 template <typename S, typename T>
-std::pair<buffer, state> handle_input(buffer b, state s, S YYPEEK, T YYSKIP) {
+editor handle_input(buffer b, state s,
+        std::vector<editor>& history,
+        std::vector<editor>& future,
+        S YYPEEK, T YYSKIP) {
     /*!re2c
     re2c:flags:input = custom;
     re2c:define:YYCTYPE = int;
@@ -72,14 +77,19 @@ std::pair<buffer, state> handle_input(buffer b, state s, S YYPEEK, T YYSKIP) {
         /*!re2c
         "$"  {return {buffer_move_end_of_line(std::move(b)), s};}
         "0"  {return {buffer_move_start_of_line(std::move(b)), s};}
-        "A"  {s.mode = MODE_INSERT;
+        "A"  {history.push_back({b, s});
+              s.mode = MODE_INSERT;
+              future.clear();
               return {buffer_move_end_of_line(std::move(b)), s};}
         "G"  {return {buffer_move_end(std::move(b)), s};}
-        "dd" {s.checkpoint = true;
+        "dd" {history.push_back({b, s});
+              future.clear();
               return {buffer_erase_current_line(std::move(b)), s};}
         "gg" {return {buffer_move_start(std::move(b)), s};}
         "h"  {return {buffer_move_left(std::move(b), 1), s};}
-        "i"  {s.mode = MODE_INSERT;
+        "i"  {history.push_back({b, s});
+              s.mode = MODE_INSERT;
+              future.clear();
               return {std::move(b), s};}
         "j"  {return {buffer_move_down(std::move(b), 1), s};}
         "k"  {return {buffer_move_up(std::move(b), 1), s};}
@@ -94,8 +104,7 @@ std::pair<buffer, state> handle_input(buffer b, state s, S YYPEEK, T YYSKIP) {
     } else if (s.mode == MODE_INSERT) {
         /*!re2c
         del  {return {buffer_erase(std::move(b)), s};}
-        esc  {s.checkpoint = true;
-              s.mode = MODE_NORMAL;
+        esc  {s.mode = MODE_NORMAL;
               return {buffer_move_left(std::move(b), 1), s};}
         ret  {return {buffer_break_line(std::move(b)), s};}
         tab  {return {buffer_insert(std::move(b), ' ', 4), s};}
@@ -106,12 +115,16 @@ std::pair<buffer, state> handle_input(buffer b, state s, S YYPEEK, T YYSKIP) {
     return {b, s};
 }
 
-std::pair<buffer, state> handle_input_stdin(buffer b, state s) {
+editor handle_input_stdin(buffer b, state s,
+        std::vector<editor>& history,
+        std::vector<editor>& future) {
     int c;
     bool skip = true;
     return handle_input(
         std::move(b),
         s,
+        history,
+        future,
         [&](){
             if (skip) {
                 c = getchar();
@@ -129,32 +142,29 @@ int main(int argc, char* argv[]) {
 
     std::chrono::time_point<std::chrono::high_resolution_clock> timer_start;
     std::chrono::time_point<std::chrono::high_resolution_clock> timer_end;
-    std::vector<buffer> history;
-    std::vector<buffer> future;
-    window w;
-    std::pair<buffer,state> state = {
+    std::vector<editor> history;
+    std::vector<editor> future;
+    editor ed = {
         {{std::make_shared<buffer_line>()},{0, 0}},
         {}
     };
-    auto& [b, s] = state;
+    auto& [b, s] = ed;
     if (argc > 1) {
         b = file_load(argv[1]);
     }
-
-    history.push_back(b);
 
     assert(enable_raw_mode() == 0);
 
     while (true) {
 
         /* render main window */
-        w = window_update_size(w);
-        w = window_update_scroll(state.first, w);
-        window_render(b, w);
+        s.win = window_update_size(s.win);
+        s.win = window_update_scroll(ed.first, s.win);
+        window_render(b, s.win);
 
         /* print statusline, if any */
         if (s.status) {
-            printf("\033[%ld;%ldH%s\033[K", w.height, 0ul, s.status);
+            printf("\033[%ld;%ldH%s\033[K", s.win.height, 0ul, s.status);
             s.status = NULL;
         }
 
@@ -162,28 +172,35 @@ int main(int argc, char* argv[]) {
         timer_end = std::chrono::high_resolution_clock::now();
         auto timer_elapsed_ms = std::chrono::duration_cast<
                 std::chrono::microseconds>(timer_end - timer_start).count();
-        printf("\033[%ld;%ldH%6ld", w.height-1, w.width-9, timer_elapsed_ms);
+        printf("\033[%ld;%ldH%6ld", s.win.height-1, s.win.width-9, timer_elapsed_ms);
 
-        window_render_cursor(b, w);
+        window_render_cursor(b, s.win);
 
         /* handle user input */
-        state = handle_input_stdin(std::move(b), s);
-
-        /* handle save history */
-        if (s.checkpoint) {
-            history.push_back(b);
-            s.checkpoint = false;
-        }
+        ed = handle_input_stdin(std::move(b), s, history, future);
 
         /* handle undo */
         if (s.undo) {
+            s.undo = false;
             if (history.empty()) {
                 s.status = "History empty!";
             } else {
-                b = history.back();
+                future.push_back(std::move(ed));
+                ed = std::move(history.back());
                 history.pop_back();
             }
-            s.undo = false;
+        }
+
+        /* handle redo */
+        if (s.redo) {
+            s.redo = false;
+            if (future.empty()) {
+                s.status = "Future empty!";
+            } else {
+                history.push_back(std::move(ed));
+                ed = std::move(future.back());
+                future.pop_back();
+            }
         }
 
         /* start timer */
