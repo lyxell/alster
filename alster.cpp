@@ -75,7 +75,8 @@ editor handle_input(buffer b, state s, std::vector<editor>& history,
         "q"  {s.exit = true;
               return {{std::move(lines), pos}, s};}
         "s"  {file_save(output, b); return {{std::move(lines), pos}, s};}
-        *    {s.status = MESSAGE_COMMAND_NOT_FOUND; return {{std::move(lines), pos}, s};}
+        *    {s.status = MESSAGE_COMMAND_NOT_FOUND;
+              return {{std::move(lines), pos}, s};}
         */
     } else if (s.mode == MODE_INSERT) {
         /*!re2c
