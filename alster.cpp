@@ -9,9 +9,6 @@
 #include "tokenize.h"
 #include "file.h"
 
-const char* output = "test2";
-const char* MESSAGE_COMMAND_NOT_FOUND = "No such command.";
-
 enum {
     MODE_NORMAL,
     MODE_INSERT
@@ -125,11 +122,11 @@ handle_input(buffer b, state s, window w, std::istream& in) {
         }
 
         "s" {
-            file_save(output, b); return {{std::move(lines), pos}, s, w};
+            file_save("test2", b); return {{std::move(lines), pos}, s, w};
         }
 
         * {
-            s.status = MESSAGE_COMMAND_NOT_FOUND;
+            s.status = "No such command.";
             return {{std::move(lines), pos}, s, w};
         }
 
