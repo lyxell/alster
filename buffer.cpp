@@ -19,9 +19,10 @@ buffer buffer_move_start(buffer buf) {
 }
 
 buffer buffer_move_end(buffer buf) {
+    auto y = buf.lines.size() - 1;
     return {
         std::move(buf.lines),
-        {buf.pos.x, buf.lines.size() - 1}
+        {buf.pos.x, y}
     };
 }
 
@@ -56,9 +57,10 @@ buffer buffer_move_right(buffer buf, size_t n) {
 }
 
 buffer buffer_move_down(buffer buf, size_t n) {
+    auto y = std::min(buf.pos.y + n, buf.lines.size() - 1);
     return {
         std::move(buf.lines),
-        {buf.pos.x, std::min(buf.pos.y + n, buf.lines.size() - 1)}
+        {buf.pos.x, y}
     };
 }
 
@@ -74,9 +76,10 @@ buffer buffer_erase_current_line(buffer buf) {
         return {{std::make_shared<buffer_line>()}, buf.pos};
     }
     buf.lines.erase(buf.lines.begin() + buf.pos.y);
+    auto y = std::min(buf.pos.y, buf.lines.size() - 1);
     return {
         std::move(buf.lines),
-        {buf.pos.x, std::min(buf.pos.y, buf.lines.size() - 1)}
+        {buf.pos.x, y}
     };
 }
 
@@ -84,6 +87,10 @@ buffer buffer_insert(buffer buf, buffer_char c, size_t n) {
     auto& [lines, pos] = buf;
     auto& [x, y] = pos;
     x = std::min(lines[y]->size(), x);
+    if (x > 0 && x != lines[y]->size() &&
+            bracket_left_to_right(lines[y]->at(x-1)) == c && lines[y]->at(x) == c) {
+        return buffer_move_right(buf, 1);
+    }
     if (lines[y].use_count() > 1) {
         lines[y] = std::make_shared<buffer_line>(*lines[y]);
     }
@@ -127,8 +134,8 @@ buffer buffer_erase(buffer buf) {
         if (lines[y].use_count() > 1) {
             lines[y] = std::make_shared<buffer_line>(*lines[y]);
         }
-        lines[y]->insert(lines[y]->begin(), lines[y+1]->begin(),
-                                            lines[y+1]->end());
+        lines[y]->insert(lines[y]->end(), lines[y+1]->begin(),
+                                          lines[y+1]->end());
         lines.erase(lines.begin() + y + 1);
     }
     return buf;

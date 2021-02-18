@@ -23,7 +23,7 @@ struct state {
 
 using editor = std::tuple<buffer,state,window>;
 
-editor handle_input(buffer b, state s, window w, std::istream& in) {
+editor editor_handle_input(buffer b, state s, window w, std::istream& in) {
     std::streampos marker;
     /*!re2c
     re2c:yyfill:enable = 0;
@@ -52,9 +52,10 @@ editor handle_input(buffer b, state s, window w, std::istream& in) {
         }
 
         "A" {
-            s.history.push_back(b);
             s.mode = MODE_INSERT;
-            s.future.clear();
+            if (!s.history.size() || s.history.back().lines != b.lines) {
+                s.history.push_back(b);
+            }
             return {buffer_move_end_of_line(std::move(b)), s, w};
         }
 
@@ -77,9 +78,10 @@ editor handle_input(buffer b, state s, window w, std::istream& in) {
         }
 
         "i" {
-            s.history.push_back(b);
             s.mode = MODE_INSERT;
-            s.future.clear();
+            if (!s.history.size() || s.history.back().lines != b.lines) {
+                s.history.push_back(b);
+            }
             return {std::move(b), s, w};
         }
 
@@ -135,19 +137,25 @@ editor handle_input(buffer b, state s, window w, std::istream& in) {
         /*!re2c
 
         del {
+            s.future.clear();
             return {buffer_erase(std::move(b)), s, w};
         }
 
         esc {
             s.mode = MODE_NORMAL;
+            if (b.lines == s.history.back().lines) {
+                s.history.pop_back();
+            }
             return {buffer_move_left(std::move(b), 1), s, w};
         }
 
         ret {
+            s.future.clear();
             return {buffer_break_line(std::move(b)), s, w};
         }
 
         tab {
+            s.future.clear();
             return {buffer_insert(std::move(b), ' ', 4), s, w};
         }
 
@@ -156,6 +164,7 @@ editor handle_input(buffer b, state s, window w, std::istream& in) {
         }
 
         * {
+            s.future.clear();
             return {buffer_insert(std::move(b), yych, 1), s, w};
         }
 
@@ -164,7 +173,7 @@ editor handle_input(buffer b, state s, window w, std::istream& in) {
     return {b, s, w};
 }
 
-editor next_frame(buffer buf, state s, window win) {
+editor editor_draw(buffer buf, state s, window win) {
     win = window_update_size(win);
     win = window_update_scroll(buf, win);
     window_render(buf, win);
@@ -173,27 +182,29 @@ editor next_frame(buffer buf, state s, window win) {
         s.status = NULL;
     }
     window_render_cursor(buf, win);
-    return handle_input(std::move(buf),
-                        std::move(s),
-                        std::move(win),
-                        std::cin);
-
+    return {
+        std::move(buf),
+        std::move(s),
+        std::move(win)
+    };
 }
 
 int main(int argc, char* argv[]) {
-    editor ed {
-        {{std::make_shared<buffer_line>()},{0, 0}},
-        {},
-        {}
-    };
+    editor ed {};
     if (argc > 1) {
         std::get<0>(ed) = file_load(argv[1]);
+    } else {
+        std::get<0>(ed) = {{std::make_shared<buffer_line>()}, {0, 0}};
     }
     assert(tty_enable_raw_mode() == 0);
     while (true) {
-       ed = next_frame(std::move(std::get<0>(ed)),
-                       std::move(std::get<1>(ed)),
-                       std::move(std::get<2>(ed)));
+        ed = editor_draw(std::move(std::get<0>(ed)),
+                         std::move(std::get<1>(ed)),
+                         std::move(std::get<2>(ed)));
+        ed = editor_handle_input(std::move(std::get<0>(ed)),
+                                 std::move(std::get<1>(ed)),
+                                 std::move(std::get<2>(ed)),
+                                 std::cin);
     }
     return 0;
 }
