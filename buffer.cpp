@@ -1,6 +1,16 @@
 #include <algorithm>
 #include "buffer.h"
 
+static buffer_char close_paren(buffer_char l) {
+    switch (l) {
+        case '(': return ')';
+        case '[': return ']';
+        case '{': return '}';
+        default: break;
+    }
+    return '\0';
+}
+
 buffer buffer_move_start(buffer_lines lines, buffer_position pos) {
     return {
         std::move(lines),
@@ -76,9 +86,15 @@ buffer buffer_insert(buffer_lines lines, buffer_position pos,
     for (size_t i = 0; i < n; i++) {
         lines[pos.y]->insert(lines[pos.y]->begin() + x, c);
     }
+    pos.x += n;
+    if (close_paren(c)) {
+        auto [next_lines, _] = buffer_insert(std::move(lines), pos,
+                                        close_paren(c), 1);
+        lines = std::move(next_lines);
+    }
     return {
         std::move(lines),
-        {pos.x + n, pos.y}
+        pos
     };
 }
 

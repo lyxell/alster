@@ -9,7 +9,7 @@
 #include "tokenize.h"
 #include "file.h"
 
-const char* output = "test";
+const char* output = "test2";
 const char* MESSAGE_COMMAND_NOT_FOUND = "No such command.";
 
 enum {
