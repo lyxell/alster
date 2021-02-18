@@ -21,8 +21,9 @@ struct state {
     std::vector<buffer> future;
 };
 
-std::tuple<buffer,state,window>
-handle_input(buffer b, state s, window w, std::istream& in) {
+using editor = std::tuple<buffer,state,window>;
+
+editor handle_input(buffer b, state s, window w, std::istream& in) {
     auto& [lines, pos] = b;
     std::streampos marker;
     /*!re2c
@@ -164,7 +165,7 @@ handle_input(buffer b, state s, window w, std::istream& in) {
     return {b, s, w};
 }
 
-std::tuple<buffer,state,window> next_frame(buffer buf, state s, window win) {
+editor next_frame(buffer buf, state s, window win) {
     win = window_update_size(win);
     win = window_update_scroll(buf, win);
     window_render(buf, win);
@@ -182,22 +183,22 @@ std::tuple<buffer,state,window> next_frame(buffer buf, state s, window win) {
 
 int main(int argc, char* argv[]) {
 
-    std::tuple<buffer,state,window> editor {
+    editor ed {
         {{std::make_shared<buffer_line>()},{0, 0}},
         {},
         {}
     };
 
     if (argc > 1) {
-        std::get<0>(editor) = file_load(argv[1]);
+        std::get<0>(ed) = file_load(argv[1]);
     }
 
     assert(tty_enable_raw_mode() == 0);
 
     while (true) {
-       editor = next_frame(std::move(std::get<0>(editor)),
-                           std::move(std::get<1>(editor)),
-                           std::move(std::get<2>(editor)));
+       ed = next_frame(std::move(std::get<0>(ed)),
+                       std::move(std::get<1>(ed)),
+                       std::move(std::get<2>(ed)));
     }
 
     return 0;
