@@ -23,9 +23,9 @@ buffer file_load(const char* filename) {
     return {std::move(lines), {0, 0}};
 }
 
-void file_save(const char* filename, const buffer& b) {
+void file_save(const char* filename, const buffer& buf) {
     std::ofstream out(filename);
-    for (auto line : b.first) {
+    for (auto line : buf.lines) {
         out << utf8_encode(*line);
         out << '\n';
     }

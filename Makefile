@@ -1,10 +1,12 @@
 CXXFLAGS=-std=c++17 \
 		 -static \
 		 -Wall \
+		 -g \
 		 -O2 \
 		 -Wfatal-errors \
 		 -Wconversion \
 		 -Wshadow \
+		 -Werror \
 		 -Wswitch-default \
 		 -Wdisabled-optimization
 

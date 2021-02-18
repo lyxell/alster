@@ -22,17 +22,21 @@ struct buffer_position {
 using buffer_char = char32_t;
 using buffer_line = std::u32string;
 using buffer_lines = std::vector<std::shared_ptr<buffer_line>>;
-using buffer = std::pair<buffer_lines, buffer_position>;
 
-buffer buffer_move_left(buffer_lines, buffer_position, size_t);
-buffer buffer_move_right(buffer_lines, buffer_position, size_t);
-buffer buffer_move_down(buffer_lines, buffer_position, size_t);
-buffer buffer_move_up(buffer_lines, buffer_position, size_t);
-buffer buffer_insert(buffer_lines, buffer_position, buffer_char, size_t);
-buffer buffer_erase(buffer_lines, buffer_position);
-buffer buffer_break_line(buffer_lines, buffer_position);
-buffer buffer_move_start(buffer_lines, buffer_position);
-buffer buffer_move_end(buffer_lines, buffer_position);
-buffer buffer_move_start_of_line(buffer_lines, buffer_position);
-buffer buffer_move_end_of_line(buffer_lines, buffer_position);
-buffer buffer_erase_current_line(buffer_lines, buffer_position);
+struct buffer {
+    buffer_lines lines;
+    buffer_position pos;
+};
+
+buffer buffer_move_left(buffer, size_t);
+buffer buffer_move_right(buffer, size_t);
+buffer buffer_move_down(buffer, size_t);
+buffer buffer_move_up(buffer, size_t);
+buffer buffer_insert(buffer, buffer_char, size_t);
+buffer buffer_erase(buffer);
+buffer buffer_break_line(buffer);
+buffer buffer_move_start(buffer);
+buffer buffer_move_end(buffer);
+buffer buffer_move_start_of_line(buffer);
+buffer buffer_move_end_of_line(buffer);
+buffer buffer_erase_current_line(buffer);

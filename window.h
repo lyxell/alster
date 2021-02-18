@@ -10,7 +10,7 @@ struct window {
     }
 };
 
-void window_render(const buffer& buf, const window& w);
-void window_render_cursor(const buffer& buf, const window& w);
-window window_update_size(window w);
-window window_update_scroll(const buffer& b, window w);
+void window_render(const buffer&, window);
+void window_render_cursor(const buffer&, window);
+window window_update_size(window);
+window window_update_scroll(const buffer&, window);

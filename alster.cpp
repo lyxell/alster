@@ -1,4 +1,4 @@
-#include <assert.h>
+#include <cassert>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -24,7 +24,6 @@ struct state {
 using editor = std::tuple<buffer,state,window>;
 
 editor handle_input(buffer b, state s, window w, std::istream& in) {
-    auto& [lines, pos] = b;
     std::streampos marker;
     /*!re2c
     re2c:yyfill:enable = 0;
@@ -45,77 +44,77 @@ editor handle_input(buffer b, state s, window w, std::istream& in) {
         /*!re2c
 
         "$" {
-            return {buffer_move_end_of_line(std::move(lines), pos), s, w};
+            return {buffer_move_end_of_line(std::move(b)), s, w};
         }
 
         "0" {
-            return {buffer_move_start_of_line(std::move(lines), pos), s, w};
+            return {buffer_move_start_of_line(std::move(b)), s, w};
         }
 
         "A" {
             s.history.push_back(b);
             s.mode = MODE_INSERT;
             s.future.clear();
-            return {buffer_move_end_of_line(std::move(lines), pos), s, w};
+            return {buffer_move_end_of_line(std::move(b)), s, w};
         }
 
         "G" {
-            return {buffer_move_end(std::move(lines), pos), s, w};
+            return {buffer_move_end(std::move(b)), s, w};
         }
 
         "dd" {
             s.history.push_back(b);
             s.future.clear();
-            return {buffer_erase_current_line(std::move(lines), pos), s, w};
+            return {buffer_erase_current_line(std::move(b)), s, w};
         }
 
         "gg" {
-            return {buffer_move_start(std::move(lines), pos), s, w};
+            return {buffer_move_start(std::move(b)), s, w};
         }
 
         "h" {
-            return {buffer_move_left(std::move(lines), pos, 1), s, w};
+            return {buffer_move_left(std::move(b), 1), s, w};
         }
 
         "i" {
             s.history.push_back(b);
             s.mode = MODE_INSERT;
             s.future.clear();
-            return {{std::move(lines), pos}, s, w};
+            return {std::move(b), s, w};
         }
 
         "j" {
-            return {buffer_move_down(std::move(lines), pos, 1), s, w};
+            return {buffer_move_down(std::move(b), 1), s, w};
         }
 
         "k" {
-            return {buffer_move_up(std::move(lines), pos, 1), s, w};
+            return {buffer_move_up(std::move(b), 1), s, w};
         }
 
         "l" {
-            return {buffer_move_right(std::move(lines), pos, 1), s, w};
+            return {buffer_move_right(std::move(b), 1), s, w};
         }
 
         "u" {
             if (s.history.empty()) {
                 s.status = "History empty!";
             } else {
-                s.future.push_back(b);
+                s.future.push_back(std::move(b));
                 b = std::move(s.history.back());
                 s.history.pop_back();
             }
-            return {{std::move(lines), pos}, s, w};
+            return {std::move(b), s, w};
         }
 
         "r" {
             if (s.future.empty()) {
                 s.status = "Future empty!";
             } else {
-                s.history.push_back(b);
+                s.history.push_back(std::move(b));
                 b = std::move(s.future.back());
                 s.future.pop_back();
             }
-            return {{std::move(lines), pos}, s, w};
+            return {std::move(b), s, w};
         }
 
         "q" {
@@ -123,12 +122,12 @@ editor handle_input(buffer b, state s, window w, std::istream& in) {
         }
 
         "s" {
-            file_save("test2", b); return {{std::move(lines), pos}, s, w};
+            file_save("test2", b); return {std::move(b), s, w};
         }
 
         * {
             s.status = "No such command.";
-            return {{std::move(lines), pos}, s, w};
+            return {std::move(b), s, w};
         }
 
         */
@@ -136,28 +135,28 @@ editor handle_input(buffer b, state s, window w, std::istream& in) {
         /*!re2c
 
         del {
-            return {buffer_erase(std::move(lines), pos), s, w};
+            return {buffer_erase(std::move(b)), s, w};
         }
 
         esc {
             s.mode = MODE_NORMAL;
-            return {buffer_move_left(std::move(lines), pos, 1), s, w};
+            return {buffer_move_left(std::move(b), 1), s, w};
         }
 
         ret {
-            return {buffer_break_line(std::move(lines), pos), s, w};
+            return {buffer_break_line(std::move(b)), s, w};
         }
 
         tab {
-            return {buffer_insert(std::move(lines), pos, ' ', 4), s, w};
+            return {buffer_insert(std::move(b), ' ', 4), s, w};
         }
 
         nul {
-            return {{std::move(lines), pos}, s, w};
+            return {std::move(b), s, w};
         }
 
         * {
-            return {buffer_insert(std::move(lines), pos, yych, 1), s, w};
+            return {buffer_insert(std::move(b), yych, 1), s, w};
         }
 
         */
@@ -182,25 +181,20 @@ editor next_frame(buffer buf, state s, window win) {
 }
 
 int main(int argc, char* argv[]) {
-
     editor ed {
         {{std::make_shared<buffer_line>()},{0, 0}},
         {},
         {}
     };
-
     if (argc > 1) {
         std::get<0>(ed) = file_load(argv[1]);
     }
-
     assert(tty_enable_raw_mode() == 0);
-
     while (true) {
        ed = next_frame(std::move(std::get<0>(ed)),
                        std::move(std::get<1>(ed)),
                        std::move(std::get<2>(ed)));
     }
-
     return 0;
 }
 
