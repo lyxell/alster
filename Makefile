@@ -10,7 +10,7 @@ CXXFLAGS=-std=c++17 \
 		 -march=native \
 		 -g
 
-build/alster: build/alster_re2c.cpp buffer.cpp \
+build/alster: build/alster_re2c.cpp buffer.cpp tty.cpp \
 			  buffer.h syntax/c.re2c build/window_re2c.cpp file.cpp file.h utf8.cpp
 			 
 	mkdir -p build
@@ -20,6 +20,7 @@ build/alster: build/alster_re2c.cpp buffer.cpp \
 		build/alster_re2c.cpp \
 		buffer.cpp \
 		utf8.cpp \
+		tty.cpp \
 		build/window_re2c.cpp \
 		file.cpp \
 		 -o $@

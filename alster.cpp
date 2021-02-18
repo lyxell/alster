@@ -1,10 +1,9 @@
-#include <chrono>
-#include <stdbool.h>
-#include <unistd.h>
 #include <assert.h>
 #include <string>
-#include <termios.h>
+#include <iostream>
+#include <fstream>
 
+#include "tty.h"
 #include "window.h"
 #include "buffer.h"
 #include "tokenize.h"
@@ -12,40 +11,6 @@
 
 const char* output = "test";
 const char* MESSAGE_COMMAND_NOT_FOUND = "No such command.";
-
-std::chrono::time_point<std::chrono::high_resolution_clock> timer_start;
-std::chrono::time_point<std::chrono::high_resolution_clock> timer_end;
-#define NUM_MEASUREMENTS 50
-size_t measurements[NUM_MEASUREMENTS];
-
-static struct termios orig_termios;
-
-void disable_raw_mode(int fd) {
-    tcsetattr(fd,TCSAFLUSH,&orig_termios);
-}
-
-void editor_at_exit(void) {
-    disable_raw_mode(STDIN_FILENO);
-}
-
-int enable_raw_mode() {
-    struct termios raw;
-    if (!isatty(STDIN_FILENO)) goto fatal;
-    atexit(editor_at_exit);
-    if (tcgetattr(STDIN_FILENO,&orig_termios) == -1) goto fatal;
-    raw = orig_termios;
-    raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
-    raw.c_oflag &= ~(OPOST);
-    raw.c_cflag |= (CS8);
-    raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
-    raw.c_cc[VMIN] = 1;
-    raw.c_cc[VTIME] = 0;
-    if (tcsetattr(STDIN_FILENO,TCSAFLUSH,&raw) < 0) goto fatal;
-    return 0;
-fatal:
-    errno = ENOTTY;
-    return -1;
-}
 
 enum {
     MODE_NORMAL,
@@ -63,16 +28,19 @@ struct state {
 
 using editor = std::pair<buffer, state>;
 
-template <typename S, typename T>
-editor handle_input(buffer b, state s,
-        std::vector<editor>& history,
-        std::vector<editor>& future,
-        S YYPEEK, T YYSKIP) {
+editor handle_input(buffer b, state s, std::vector<editor>& history,
+        std::vector<editor>& future, std::istream& in) {
     auto& [lines, pos] = b;
+    std::streampos marker;
     /*!re2c
-    re2c:flags:input = custom;
-    re2c:define:YYCTYPE = int;
     re2c:yyfill:enable = 0;
+    re2c:flags:input = custom;
+    re2c:api:style = free-form;
+    re2c:define:YYCTYPE   = int;
+    re2c:define:YYPEEK    = "in.peek()";
+    re2c:define:YYSKIP    = "in.ignore();";
+    re2c:define:YYBACKUP  = "marker = in.tellg();";
+    re2c:define:YYRESTORE = "in.seekg(marker);";
     nul = "\x00";
     esc = "\x1b";
     ret = "\x0d";
@@ -123,30 +91,6 @@ editor handle_input(buffer b, state s,
     return {b, s};
 }
 
-editor handle_input_stdin(buffer b, state s,
-        std::vector<editor>& history,
-        std::vector<editor>& future) {
-    int c;
-    bool skip = true;
-    return handle_input(
-        std::move(b),
-        s,
-        history,
-        future,
-        [&](){
-            if (skip) {
-                c = getchar();
-                skip = false;
-            }
-            timer_start = std::chrono::high_resolution_clock::now();
-            return c;
-        },
-        [&](){
-            skip = true;
-        }
-    );
-}
-
 int main(int argc, char* argv[]) {
 
     std::vector<editor> history;
@@ -160,7 +104,7 @@ int main(int argc, char* argv[]) {
         b = file_load(argv[1]);
     }
 
-    assert(enable_raw_mode() == 0);
+    assert(tty_enable_raw_mode() == 0);
 
     while (true) {
 
@@ -175,23 +119,10 @@ int main(int argc, char* argv[]) {
             s.status = NULL;
         }
 
-        /* stop timer, print time elapsed */
-        timer_end = std::chrono::high_resolution_clock::now();
-        for (size_t i = 1; i < NUM_MEASUREMENTS; i++) {
-            measurements[i-1] = measurements[i];
-        }
-        measurements[NUM_MEASUREMENTS-1] = std::chrono::duration_cast<
-                std::chrono::microseconds>(timer_end - timer_start).count();
-        size_t sum = 0;
-        for (auto c : measurements)
-            sum += c;
-
-        printf("\033[%ld;%ldH%6ld", s.win.height-1, s.win.width-9, sum / NUM_MEASUREMENTS);
-
         window_render_cursor(b, s.win);
 
         /* handle user input */
-        ed = handle_input_stdin(std::move(b), s, history, future);
+        ed = handle_input(std::move(b), s, history, future, std::cin);
 
         if (s.exit) {
             break;
