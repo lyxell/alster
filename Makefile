@@ -10,20 +10,26 @@ CXXFLAGS=-std=c++17 \
 		 -march=native \
 		 -g
 
-build/alster: build/alster_re2c.cpp buffer.cpp tty.cpp \
-			  buffer.h syntax/c.re2c build/window_re2c.cpp file.cpp file.h utf8.cpp
+build/alster: build/alster_re2c.cpp buffer.cpp build/syntax/c_re2c.cpp tty.cpp \
+			  buffer.h build/window_re2c.cpp file.cpp file.h utf8.cpp
 			 
 	mkdir -p build
 	$(CXX) \
 		$(CXXFLAGS) \
 		-I. \
+		-Isyntax \
 		build/alster_re2c.cpp \
 		buffer.cpp \
 		utf8.cpp \
 		tty.cpp \
+		build/syntax/c_re2c.cpp \
+		build/syntax/c_string_re2c.cpp \
 		build/window_re2c.cpp \
 		file.cpp \
 		 -o $@
+
+build/test_tokenize: test/test_tokenize.cpp build/syntax/c_re2c.cpp build/syntax/c_string_re2c.cpp utf8.cpp
+	$(CXX) $(CXXFLAGS) $^ -I. -Isyntax -o $@
 
 build/fuzzer: build/alster_re2c.cpp buffer.cpp \
 			  buffer.h syntax/c.re2c window.cpp
@@ -39,8 +45,8 @@ build/fuzzer: build/alster_re2c.cpp buffer.cpp \
 		file.cpp \
 		 -o $@
 
-build/%_re2c.cpp: %.cpp syntax/c.re2c
-	mkdir -p build
+build/%_re2c.cpp: %.cpp
+	mkdir -p $(@D)
 	re2c -W -i $< -o $@
 
 .PHONY: clean
