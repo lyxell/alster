@@ -15,18 +15,17 @@ buffer file_load(const char* filename) {
     std::string str((std::istreambuf_iterator<char>(t)),
                      std::istreambuf_iterator<char>());
     auto u32s = utf8_decode(str);
-    std::vector<std::shared_ptr<buffer_line>> lines;
+    buffer_lines lines;
     buffer_line line;
     for (char32_t c : u32s) {
         if (c == '\n') {
-            lines.push_back(std::make_shared<buffer_line>(line));
+            lines.push_back(std::make_shared<buffer_line>(std::move(line)));
             line.clear();
         } else {
             line.push_back(c);
         }
     }
-    b = buffer_move_start(b);
-    return {lines, {0, 0}};
+    return {std::move(lines), {0, 0}};
 }
 
 void file_save(const char* filename, const buffer& b) {

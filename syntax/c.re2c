@@ -1,3 +1,24 @@
+void colorize_cstring(char32_t* str) {
+    assert(str[0] == "\"");
+    print(C_STRING_OPEN_QUOTE, str, str + 1);
+    str++;
+    while (1) {
+        char32_t* start = YYCURSOR;
+        /*!re2c
+            "%d" {
+                print(C_STRING_FORMAT, start, YYCURSOR);
+            }
+            "\"" {
+                print(C_STRING_END_QUOTE, start, YYCURSOR);
+            }
+            "\x00" {
+                return;
+            }
+        */
+    }
+}
+
+
 /*!re2c
 
 c_keyword = "break"
@@ -18,15 +39,18 @@ c_comment = "//" [^\n\x00]* "\n"
           | "/*" ([^*\x00] | ("*" [^/\x00]))* "*""/"
           | "#" ([^\n\x00] | "\\\n")* "\n";
 
-c_type = "FILE" "*"*
-       | "bool" "*"*
-       | "char" "*"*
-       | "int" "*"*
-       | "double" "*"*
-       | "const"
-       | "float" "*"*
-       | "size_t" "*"*
-       | "void" "*"*;
+"FILE" "*"*
+| "bool" "*"*
+| "char" "*"*
+| "int" "*"*
+| "double" "*"*
+| "const"
+| "float" "*"*
+| "size_t" "*"*
+| "void" "*"*
+{
+    print(BLUE, 0, LENGTH);
+}
 
 c_identifier = [a-zA-Z_][a-zA-Z_0-9]*;
 

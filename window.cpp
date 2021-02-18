@@ -93,7 +93,7 @@ void window_render(const buffer& buf, const window& w) {
     std::u32string tokens;
     for (size_t i = 0; i < w.height; i++) {
         if (lines.size() > i + w.scroll) {
-            windowframe.push_back(buffer_get_line(buf, i + w.scroll));
+            windowframe.push_back(*lines[i + w.scroll]);
             tokens += windowframe.back();
             tokens += '\n';
         }
@@ -140,7 +140,7 @@ void window_render(const buffer& buf, const window& w) {
 void window_render_cursor(const buffer& buf, const window& w) {
     const auto& [lines, pos] = buf;
     printf("\033[%ld;%ldH", pos.y - w.scroll + 1,
-            std::min(pos.x, buffer_get_line(buf, pos.y).size()) + 9);
+            std::min(pos.x, lines[pos.y]->size()) + 9);
 }
 
 window window_update_size(window w) {
