@@ -13,6 +13,11 @@
 const char* output = "test";
 const char* MESSAGE_COMMAND_NOT_FOUND = "No such command.";
 
+std::chrono::time_point<std::chrono::high_resolution_clock> timer_start;
+std::chrono::time_point<std::chrono::high_resolution_clock> timer_end;
+#define NUM_MEASUREMENTS 50
+size_t measurements[NUM_MEASUREMENTS];
+
 static struct termios orig_termios;
 
 void disable_raw_mode(int fd) {
@@ -132,6 +137,7 @@ editor handle_input_stdin(buffer b, state s,
                 c = getchar();
                 skip = false;
             }
+            timer_start = std::chrono::high_resolution_clock::now();
             return c;
         },
         [&](){
@@ -142,8 +148,6 @@ editor handle_input_stdin(buffer b, state s,
 
 int main(int argc, char* argv[]) {
 
-    std::chrono::time_point<std::chrono::high_resolution_clock> timer_start;
-    std::chrono::time_point<std::chrono::high_resolution_clock> timer_end;
     std::vector<editor> history;
     std::vector<editor> future;
     editor ed = {
@@ -172,9 +176,16 @@ int main(int argc, char* argv[]) {
 
         /* stop timer, print time elapsed */
         timer_end = std::chrono::high_resolution_clock::now();
-        auto timer_elapsed_ms = std::chrono::duration_cast<
+        for (size_t i = 1; i < NUM_MEASUREMENTS; i++) {
+            measurements[i-1] = measurements[i];
+        }
+        measurements[NUM_MEASUREMENTS-1] = std::chrono::duration_cast<
                 std::chrono::microseconds>(timer_end - timer_start).count();
-        printf("\033[%ld;%ldH%6ld", s.win.height-1, s.win.width-9, timer_elapsed_ms);
+        size_t sum = 0;
+        for (auto c : measurements)
+            sum += c;
+
+        printf("\033[%ld;%ldH%6ld", s.win.height-1, s.win.width-9, sum / NUM_MEASUREMENTS);
 
         window_render_cursor(b, s.win);
 
@@ -208,9 +219,6 @@ int main(int argc, char* argv[]) {
                 future.pop_back();
             }
         }
-
-        /* start timer */
-        timer_start = std::chrono::high_resolution_clock::now();
 
     }
     return 0;
