@@ -13,8 +13,7 @@ token_collection tokenize_c(const char32_t* str) {
         re2c:yyfill:enable = 0;
         re2c:define:YYCTYPE = char32_t;
 
-        "\"" [^"\n\x00]* "\""
-        {
+        "\"" [^"\n\x00]* "\"" {
             auto res = tokenize_c_string(YYSTART);
             std::copy(res.begin(), res.end(),
                       std::back_inserter(tokens));
@@ -52,8 +51,7 @@ token_collection tokenize_c(const char32_t* str) {
             continue;
         }
 
-        "break" | "continue" | "else" | "for" | "return" | "if" | "while"
-        {
+        "break" | "continue" | "else" | "for" | "return" | "if" | "while" {
             tokens.emplace_back(YYSTART, YYCURSOR, C_KEYWORD);
             continue;
         }
