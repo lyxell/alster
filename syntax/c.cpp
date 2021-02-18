@@ -31,6 +31,11 @@ token_collection tokenize_c(const char32_t* str) {
             continue;
         }
 
+        [0-9]* {
+            tokens.emplace_back(YYSTART, YYCURSOR, C_INVALID);
+            continue;
+        }
+
         "true" | "false" {
             tokens.emplace_back(YYSTART, YYCURSOR, C_LITERAL_BOOL);
             continue;
@@ -53,6 +58,18 @@ token_collection tokenize_c(const char32_t* str) {
             continue;
         }
 
+        "[" | "]" | "(" | ")" | "{" | "}" | "." |
+        "->" | "++" | "--" | "&" | "*" | "+" | "-" |
+        "~" | "!" | "/" | "%" | "<<" | ">>" | "<" | ">" |
+        "<=" | ">=" | "==" | "!=" | "^" | "|" | "&&" | "||" |
+        "?" | ":" | ";" | "..." | "=" | "*=" | "/=" | "%=" |
+        "+=" | "-=" | "<<=" | ">>=" | "&=" | "^=" | "|=" |
+        "," | "#" | "##" | "<:" | ":>" | "<%" | "%>" | "%:" | "%:%:"
+        {
+            tokens.emplace_back(YYSTART, YYCURSOR, C_PUNCTUATOR);
+            continue;
+        }
+
         [a-zA-Z_][a-zA-Z_0-9]* {
             tokens.emplace_back(YYSTART, YYCURSOR, C_IDENTIFIER);
             continue;
@@ -66,7 +83,7 @@ token_collection tokenize_c(const char32_t* str) {
         *
         {
             assert(YYCURSOR - YYSTART == 1);
-            tokens.emplace_back(YYSTART, YYCURSOR, C_ERROR);
+            tokens.emplace_back(YYSTART, YYCURSOR, C_INVALID);
             continue;
         }
     */

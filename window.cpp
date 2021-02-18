@@ -36,6 +36,9 @@ void window_render(const buffer& buf, const window& w) {
         size_t x = 8;
         for (auto [s, e, t] : tokenize_c(line.c_str())) {
             switch (t) {
+                case C_PUNCTUATOR:
+                    set_color(COLOR_BRIGHT_BLACK);
+                    break;
                 case C_LITERAL_DECIMAL:
                 case C_LITERAL_OCTAL:
                     set_color(COLOR_RED);
@@ -55,9 +58,6 @@ void window_render(const buffer& buf, const window& w) {
                 case C_KEYWORD:
                     set_color(COLOR_MAGENTA);
                     break;
-                case C_IDENTIFIER:
-                    set_color(COLOR_YELLOW);
-                    break;
                 default:
                     set_color(COLOR_RESET);
                     break;
@@ -71,8 +71,8 @@ void window_render(const buffer& buf, const window& w) {
                 }
                 x++;
             }
+            set_color(COLOR_RESET);
         }
-        set_color(COLOR_RESET);
         y++;
     }
 }

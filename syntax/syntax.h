@@ -9,14 +9,15 @@ enum {
     C_STRING_CLOSING_QUOTE,
     C_STRING_CHAR,
     C_STRING_ESCAPE_SEQUENCE,
-    C_ERROR,
+    C_INVALID,
     C_IDENTIFIER,
     C_SINGLE_LINE_COMMENT,
     C_KEYWORD,
     C_TYPE,
     C_LITERAL_BOOL,
     C_LITERAL_DECIMAL,
-    C_LITERAL_OCTAL
+    C_LITERAL_OCTAL,
+    C_PUNCTUATOR
 };
 
 using token_collection = std::vector<std::tuple<const char32_t*, const char32_t*, int>>;
