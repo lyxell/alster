@@ -4,14 +4,13 @@
 #include <iostream>
 #include <fstream>
 
+#include "utf8.h"
 #include "tty.h"
 #include "window.h"
 #include "buffer.h"
 #include "tokenize.h"
 #include "file.h"
 
-std::chrono::time_point<std::chrono::high_resolution_clock> start;
-std::chrono::time_point<std::chrono::high_resolution_clock> end;
 
 enum {
     MODE_NORMAL,
@@ -23,20 +22,18 @@ struct state {
     const char* status;
     std::vector<buffer> history;
     std::vector<buffer> future;
+    std::chrono::time_point<std::chrono::high_resolution_clock> timer_start;
+    std::chrono::time_point<std::chrono::high_resolution_clock> timer_end;
 };
 
 using editor = std::tuple<buffer,state,window>;
 
 editor editor_handle_input(buffer b, state s, window w, std::istream& in) {
-    int c;
-    auto get = [&](){
-        c = getchar();
-        start = std::chrono::high_resolution_clock::now();
-        return c;
-    };
+    char32_t c = getchar_utf8();
+    s.timer_start = std::chrono::high_resolution_clock::now();
     switch (s.mode) {
     case MODE_NORMAL:
-        switch (get()) {
+        switch (c) {
         case '1' ... '9':
             return {std::move(b),std::move(s),w};
         case '$':
@@ -54,7 +51,7 @@ editor editor_handle_input(buffer b, state s, window w, std::istream& in) {
         case 'G':
             return {buffer_move_end(std::move(b)), s, w};
         case 'd': {
-            switch (get()) {
+            switch (c = getchar_utf8()) {
             case 'd':
                 s.history.push_back(b);
                 s.future.clear();
@@ -64,7 +61,7 @@ editor editor_handle_input(buffer b, state s, window w, std::istream& in) {
             }
         }
         case 'g': {
-            switch (get()) {
+            switch (c = getchar_utf8()) {
             case 'g':
                 return {buffer_move_start(std::move(b)), s, w};
             default:
@@ -106,13 +103,16 @@ editor editor_handle_input(buffer b, state s, window w, std::istream& in) {
             return {std::move(b), std::move(s), w};
         case 'q':
             exit(0);
+        case U'∂':
+            s.status = "deriving";
+            return {std::move(b), std::move(s), w};
         case 's':
             file_save("test2", b); return {std::move(b), std::move(s), w};
         default:
             return {b,s,w};
         }
     case MODE_INSERT:
-        switch (get()) {
+        switch (c) {
         case '\x7f':
         case '\b':
             s.future.clear();
@@ -151,8 +151,8 @@ editor editor_draw(buffer buf, state s, window win) {
         printf("\033[%ld;%ldH%s\033[K", win.height, 0ul, s.status);
         s.status = NULL;
     }
-    end = high_resolution_clock::now();
-    auto diff = duration_cast<milliseconds>(end-start).count();
+    s.timer_end = high_resolution_clock::now();
+    auto diff = duration_cast<milliseconds>(s.timer_end-s.timer_start).count();
     printf("\033[%ld;%ldH%4ld", win.height, win.width - 4, diff % 1000);
     window_render_cursor(buf, win, s.mode == MODE_INSERT);
     return {
