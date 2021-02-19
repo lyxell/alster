@@ -29,19 +29,23 @@ struct state {
 using editor = std::tuple<buffer,state,window>;
 
 editor editor_handle_input(buffer b, state s, window w, std::istream& in) {
+    size_t n = 0;
+loop:
     char32_t c = getchar_utf8();
     s.timer_start = std::chrono::high_resolution_clock::now();
     switch (s.mode) {
     case MODE_NORMAL:
         switch (c) {
-        case '1' ... '9':
-            return {std::move(b),std::move(s),w};
+        case '0' ... '9':
+            if (c == '0' && n == 0) {
+                return {buffer_move_start_of_line(std::move(b)),
+                        std::move(s), w};
+            }
+            n *= 10;
+            n += c - '0';
+            goto loop;
         case '$':
-            return {buffer_move_end_of_line(std::move(b)),
-                    std::move(s), w};
-        case '0':
-            return {buffer_move_start_of_line(std::move(b)),
-                    std::move(s), w};
+            return {buffer_move_end_of_line(std::move(b)), std::move(s), w};
         case 'A':
             s.mode = MODE_INSERT;
             if (!s.history.size() || s.history.back().lines != b.lines) {
@@ -69,7 +73,7 @@ editor editor_handle_input(buffer b, state s, window w, std::istream& in) {
             }
         }
         case 'h':
-            return {buffer_move_left(std::move(b), 1), std::move(s), w};
+            return {buffer_move_left(std::move(b), n ? n : 1), std::move(s), w};
         case 'i':
             s.mode = MODE_INSERT;
             if (!s.history.size() || s.history.back().lines != b.lines) {
@@ -77,12 +81,13 @@ editor editor_handle_input(buffer b, state s, window w, std::istream& in) {
             }
             return {std::move(b), std::move(s), std::move(w)};
         case 'j':
-            return {buffer_move_down(std::move(b), 1),
+            return {buffer_move_down(std::move(b), n ? n : 1),
                         std::move(s), std::move(w)};
         case 'k':
-            return {buffer_move_up(std::move(b), 1), std::move(s), w};
+            return {buffer_move_up(std::move(b), n ? n : 1), std::move(s), w};
         case 'l':
-            return {buffer_move_right(std::move(b), 1), std::move(s), w};
+            return {buffer_move_right(std::move(b), n ? n : 1),
+                    std::move(s), w};
         case 'u':
             if (s.history.empty()) {
                 s.status = "History empty!";
