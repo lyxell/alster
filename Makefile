@@ -10,7 +10,7 @@ CXXFLAGS=-std=c++17 \
 		 -Wswitch-default \
 		 -Wdisabled-optimization
 
-build/alster: build/alster_re2c.cpp buffer.cpp build/syntax/c_re2c.cpp build/syntax/c_string_re2c.cpp tty.cpp \
+build/alster: alster.cpp buffer.cpp build/syntax/c_re2c.cpp build/syntax/c_string_re2c.cpp tty.cpp \
 			  buffer.h build/window_re2c.cpp file.cpp file.h utf8.cpp
 			 
 	mkdir -p build
@@ -18,7 +18,7 @@ build/alster: build/alster_re2c.cpp buffer.cpp build/syntax/c_re2c.cpp build/syn
 		$(CXXFLAGS) \
 		-I. \
 		-Isyntax \
-		build/alster_re2c.cpp \
+		alster.cpp \
 		buffer.cpp \
 		utf8.cpp \
 		tty.cpp \

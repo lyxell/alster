@@ -9,7 +9,7 @@ token_collection tokenize_c(const char32_t* str) {
     token_collection tokens;
     while (1) {
         const char32_t* YYSTART = YYCURSOR;
-    /*!re2c
+        /*!re2c
         re2c:yyfill:enable = 0;
         re2c:define:YYCTYPE = char32_t;
 
@@ -30,7 +30,7 @@ token_collection tokenize_c(const char32_t* str) {
             continue;
         }
 
-        [0-9]* {
+        [0-9]+ {
             tokens.emplace_back(YYSTART, YYCURSOR, C_INVALID);
             continue;
         }
@@ -45,13 +45,14 @@ token_collection tokenize_c(const char32_t* str) {
             continue;
         }
 
-        "FILE" | "bool" | "char" | "const" | "double"
-        | "float" | "int" | "size_t" | "void" {
+        ("FILE" | "bool" | "char" | "const" | "double" | "auto"
+        | "float" | "int" | "size_t" | "void" | "struct" | "enum") "*" * {
             tokens.emplace_back(YYSTART, YYCURSOR, C_TYPE);
             continue;
         }
 
-        "break" | "continue" | "else" | "for" | "return" | "if" | "while" {
+        "break" | "continue" | "else" | "for" | "return" | "if" | "while" |
+        "switch" | "case" | "default" {
             tokens.emplace_back(YYSTART, YYCURSOR, C_KEYWORD);
             continue;
         }
@@ -68,7 +69,7 @@ token_collection tokenize_c(const char32_t* str) {
             continue;
         }
 
-        [a-zA-Z_][a-zA-Z_0-9]* {
+        "*"* [a-zA-Z_][a-zA-Z_0-9]* {
             tokens.emplace_back(YYSTART, YYCURSOR, C_IDENTIFIER);
             continue;
         }
@@ -84,7 +85,7 @@ token_collection tokenize_c(const char32_t* str) {
             tokens.emplace_back(YYSTART, YYCURSOR, C_INVALID);
             continue;
         }
-    */
+        */
     }
     return tokens;
 }

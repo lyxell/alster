@@ -83,7 +83,7 @@ buffer buffer_erase_current_line(buffer buf) {
     };
 }
 
-buffer buffer_insert(buffer buf, buffer_char c, size_t n) {
+buffer buffer_insert(buffer buf, buffer_char c) {
     auto& [lines, pos] = buf;
     auto& [x, y] = pos;
     x = std::min(lines[y]->size(), x);
@@ -94,13 +94,11 @@ buffer buffer_insert(buffer buf, buffer_char c, size_t n) {
     if (lines[y].use_count() > 1) {
         lines[y] = std::make_shared<buffer_line>(*lines[y]);
     }
-    for (size_t i = 0; i < n; i++) {
-        lines[y]->insert(lines[y]->begin() + x, c);
-    }
-    x = x + n;
+    lines[y]->insert(lines[y]->begin() + x, c);
+    x = x + 1;
     if (bracket_left_to_right(c)) {
-        buf = buffer_insert(std::move(buf), bracket_left_to_right(c), n);
-        x = x - n;
+        buf = buffer_insert(std::move(buf), bracket_left_to_right(c));
+        x = x - 1;
     }
     return buf;
 }
@@ -141,3 +139,8 @@ buffer buffer_erase(buffer buf) {
     return buf;
 }
 
+buffer buffer_indent(buffer buf) {
+    for (int i = 0; i < 4; i++)
+        buf = buffer_insert(std::move(buf), ' ');
+    return buf;
+}

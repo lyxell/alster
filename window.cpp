@@ -1,6 +1,7 @@
 #include <sys/ioctl.h>
+#include <cstring>
 #include "utf8.h"
-#include <assert.h>
+#include <cassert>
 #include "window.h"
 #include "tokenize.h"
 #include "syntax/syntax.h"
@@ -16,11 +17,15 @@ window window_update_scroll(const buffer& buf, window w) {
 }
 
 void window_render(const buffer& buf, window w) {
+    static char command[10000];
+    command[0] = '\0';
+    w.height -= 1;
     for (size_t y = 0; y < w.height; y++) {
         if (buf.lines.size() > y + w.scroll) {
             auto line = *buf.lines[y + w.scroll];
             /* clear line */
-            printf("\033[%ld;%dH%04lx %02ld\033[K ", (y+1), 1,
+            sprintf(command+strlen(command),
+                    "\033[%ld;%dH%04lx %02ld\033[K ", (y+1), 1,
                     size_t(buf.lines[y+w.scroll].get()) & 0xffff,
                     buf.lines[y+w.scroll].use_count());
             /* draw chars in line */
@@ -28,29 +33,30 @@ void window_render(const buffer& buf, window w) {
             for (auto [s, e, t] : tokenize_c(line.c_str())) {
                 switch (t) {
                     case C_PUNCTUATOR:
-                        set_color(COLOR_BRIGHT_BLACK);
+                        sprintf(command+strlen(command), "\033[%dm", COLOR_BRIGHT_BLACK);
                         break;
                     case C_LITERAL_DECIMAL:
                     case C_LITERAL_OCTAL:
-                        set_color(COLOR_RED);
+                    case C_LITERAL_BOOL:
+                        sprintf(command+strlen(command), "\033[%dm", COLOR_RED);
                         break;
                     case C_STRING_CHAR:
-                        set_color(COLOR_CYAN);
+                        sprintf(command+strlen(command), "\033[%dm", COLOR_CYAN);
                         break;
                     case C_STRING_ESCAPE_SEQUENCE:
-                        set_color(COLOR_GREEN);
+                        sprintf(command+strlen(command), "\033[%dm", COLOR_GREEN);
                         break;
                     case C_STRING_ENCODING_PREFIX:
                     case C_STRING_OPENING_QUOTE:
                     case C_STRING_CLOSING_QUOTE:
                     case C_TYPE:
-                        set_color(COLOR_BLUE);
+                        sprintf(command+strlen(command), "\033[%dm", COLOR_BLUE);
                         break;
                     case C_KEYWORD:
-                        set_color(COLOR_MAGENTA);
+                        sprintf(command+strlen(command), "\033[%dm", COLOR_MAGENTA);
                         break;
                     default:
-                        set_color(COLOR_RESET);
+                        sprintf(command+strlen(command), "\033[%dm", COLOR_RESET);
                         break;
                 }
                 auto str = std::u32string(s, e);
@@ -58,19 +64,25 @@ void window_render(const buffer& buf, window w) {
                     if (x < w.width) {
                         std::u32string output;
                         output += ch;
-                        printf(utf8_encode(output).c_str());
+                        sprintf(command+strlen(command), utf8_encode(output).c_str());
                     }
                     x++;
                 }
-                set_color(COLOR_RESET);
+                sprintf(command+strlen(command), "\033[%dm", COLOR_RESET);
             }
         } else {
-            printf("\033[%ld;%dH\033[K ", (y+1), 1);
+            sprintf(command+strlen(command), "\033[%ld;%dH\033[K ", (y+1), 1);
         }
     }
+    printf(command);
 }
 
-void window_render_cursor(const buffer& buf, window w) {
+void window_render_cursor(const buffer& buf, window w, bool insert) {
+    if (insert) {
+        printf("\033[6 q");
+    } else {
+        printf("\033[2 q");
+    }
     printf("\033[%ld;%ldH", buf.pos.y - w.scroll + 1,
             std::min(buf.pos.x, buf.lines[buf.pos.y]->size()) + 9);
 }

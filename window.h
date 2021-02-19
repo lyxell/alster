@@ -11,6 +11,6 @@ struct window {
 };
 
 void window_render(const buffer&, window);
-void window_render_cursor(const buffer&, window);
+void window_render_cursor(const buffer&, window, bool);
 window window_update_size(window);
 window window_update_scroll(const buffer&, window);

@@ -9,7 +9,7 @@ tokenize_c_string(const char32_t* str) {
     const char32_t* YYCURSOR = str;
     const char32_t* YYMARKER;
     token_collection tokens;
-/*!re2c
+    /*!re2c
     re2c:yyfill:enable = 0;
     re2c:define:YYCTYPE = char32_t;
     [uUL] "\"" {
@@ -29,10 +29,10 @@ tokenize_c_string(const char32_t* str) {
     * {
         assert(false);
     }
-*/
+    */
 content:
     while (1) {
-    /*!re2c
+        /*!re2c
         re2c:yyfill:enable = 0;
         re2c:define:YYCTYPE = char32_t;
         "\"" {
@@ -49,10 +49,16 @@ content:
                                 C_STRING_ESCAPE_SEQUENCE);
             continue;
         }
-        * {
-            assert(false);
+        "\\x" [0-9a-f][0-9a-f] {
+            tokens.emplace_back(YYCURSOR - 4, YYCURSOR,
+                                C_STRING_ESCAPE_SEQUENCE);
+            continue;
         }
-    */
+        * {
+            tokens.emplace_back(YYCURSOR - 1, YYCURSOR, C_INVALID);
+            continue;
+        }
+        */
     }
     return tokens;
 }
