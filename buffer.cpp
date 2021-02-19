@@ -5,7 +5,7 @@
  * All of these are pure functions modulo memory allocations.
  */
 
-static buffer_char bracket_left_to_right(buffer_char c) {
+static buffer_char opposite_bracket(buffer_char c) {
     switch (c) {
         case '(': return ')';
         case '[': return ']';
@@ -91,32 +91,40 @@ buffer buffer_insert(buffer buf, buffer_char c) {
     auto& [lines, pos] = buf;
     auto& [x, y] = pos;
     x = std::min(lines[y]->size(), x);
-    if (x > 0 && x != lines[y]->size() &&
-            bracket_left_to_right(lines[y]->at(x-1)) == c && lines[y]->at(x) == c) {
-        return buffer_move_right(buf, 1);
-    }
+    /* clone line if someone else holds a reference to it */
     if (lines[y].use_count() > 1) {
         lines[y] = std::make_shared<buffer_line>(*lines[y]);
     }
-    lines[y]->insert(lines[y]->begin() + x, c);
-    x = x + 1;
-    if (bracket_left_to_right(c)) {
-        buf = buffer_insert(std::move(buf), bracket_left_to_right(c));
-        x = x - 1;
+    auto& line = *lines[y];
+    /* insert opposite bracket, if any */
+    if (opposite_bracket(c)) {
+        line.insert(x, 1, opposite_bracket(c));
     }
+    /* skip if matching right bracket, TODO: improve */
+    if (x > 0 && opposite_bracket(line[x-1]) == c
+        && x < line.size() && line[x] == c) {
+        x++;
+        return buf;
+    }
+    line.insert(x, 1, c);
+    x = x + 1;
     return buf;
 }
 
 buffer buffer_break_line(buffer buf) {
     auto& [lines, pos] = buf;
     auto& [x, y] = pos;
-    auto line = *lines[y];
-    x = std::min(line.size(), x);
-    lines[y] = std::make_shared<buffer_line>(line.substr(x));
-    lines.insert(lines.begin() + y,
-                std::make_shared<buffer_line>(line.substr(0, x)));
+    x = std::min(lines[y]->size(), x);
+    /* clone line if someone else holds a reference to it */
+    if (lines[y].use_count() > 1) {
+        lines[y] = std::make_shared<buffer_line>(*lines[y]);
+    }
+    auto& line = *lines[y];
+    lines.insert(lines.begin() + y + 1,
+                std::make_shared<buffer_line>(line.substr(x)));
+    line.erase(x);
     x = 0;
-    y = y + 1;
+    y++;
     return buf;
 }
 
@@ -125,18 +133,21 @@ buffer buffer_erase(buffer buf) {
     auto& [x, y] = pos;
     x = std::min(x, lines[y]->size());
     if (x > 0) {
-        x = x - 1;
+        x--;
+        /* clone line if someone else holds a reference to it */
         if (lines[y].use_count() > 1) {
             lines[y] = std::make_shared<buffer_line>(*lines[y]);
         }
-        // remove corresponding bracket
-        if (x + 1 < lines[y]->size() && bracket_left_to_right(lines[y]->at(x)) == lines[y]->at(x+1)) {
-            lines[y]->erase(lines[y]->begin() + x + 1);
+        auto& line = *lines[y];
+        /* remove corresponding bracket, if any */
+        if (line.size() > x + 1 && opposite_bracket(line[x]) == line[x + 1]) {
+            line.erase(x + 1, 1);
         }
-        lines[y]->erase(lines[y]->begin() + x);
+        line.erase(x, 1);
     } else if (y > 0) {
-        y = y - 1;
+        y--;
         x = lines[y]->size();
+        /* clone line if someone else holds a reference to it */
         if (lines[y].use_count() > 1) {
             lines[y] = std::make_shared<buffer_line>(*lines[y]);
         }
