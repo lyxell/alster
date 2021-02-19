@@ -215,7 +215,6 @@ editor editor_handle_command(editor e) {
     } else if (e.mode == MODE_NORMAL) {
         return editor_handle_command_normal(std::move(e));
     }
-    assert(false);
     return e;
 }
 
