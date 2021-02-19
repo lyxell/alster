@@ -1,5 +1,6 @@
 #include <cassert>
 #include <chrono>
+#include <cstring>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -11,185 +12,249 @@
 #include "tokenize.h"
 #include "file.h"
 
+struct timer {
+    std::chrono::time_point<std::chrono::high_resolution_clock> s;
+    void start() {
+        s = std::chrono::high_resolution_clock::now();
+    }
+    void report(const char* str) {
+        using std::chrono::high_resolution_clock;
+        using std::chrono::duration_cast;
+        using std::chrono::microseconds;
+        auto e = high_resolution_clock::now();
+        auto diff = duration_cast<microseconds>(e - s).count();
+        fprintf(stderr, "%s %ld μs\n", str, diff);
+    }
+};
 
 enum {
     MODE_NORMAL,
     MODE_INSERT
 };
 
-struct state {
+struct editor {
+    std::u32string cmd;
     int mode;
-    const char* status;
+    char status[120];
+    buffer buf;
     std::vector<buffer> history;
     std::vector<buffer> future;
-    std::chrono::time_point<std::chrono::high_resolution_clock> timer_start;
-    std::chrono::time_point<std::chrono::high_resolution_clock> timer_end;
+    bool exiting;
+    bool saving;
 };
 
-using editor = std::tuple<buffer,state,window>;
-
 /**
- * TODO: Should be a pure function!
+ * Pure function
  */
-editor editor_handle_input(buffer b, state s, window w, std::istream& in) {
-    size_t n = 0;
-loop:
-    char32_t c = getchar_utf8();
-    s.timer_start = std::chrono::high_resolution_clock::now();
-    switch (s.mode) {
-    case MODE_NORMAL:
-        switch (c) {
-        case '0' ... '9':
-            if (c == '0' && n == 0) {
-                return {buffer_move_start_of_line(std::move(b)),
-                        std::move(s), w};
-            }
-            n *= 10;
-            n += c - '0';
-            goto loop;
-        case '$':
-            return {buffer_move_end_of_line(std::move(b)), std::move(s), w};
-        case 'A':
-            s.mode = MODE_INSERT;
-            if (!s.history.size() || s.history.back().lines != b.lines) {
-                s.history.push_back(b);
-            }
-            return {buffer_move_end_of_line(std::move(b)), s, w};
-        case 'G':
-            return {buffer_move_end(std::move(b)), s, w};
-        case 'd': {
-            switch (c = getchar_utf8()) {
-            case 'd':
-                s.history.push_back(b);
-                s.future.clear();
-                return {buffer_erase_current_line(std::move(b)), s, w};
-            default:
-                return {b,s,w};
-            }
+editor editor_handle_command_normal(editor e) {
+    const char32_t *YYCURSOR = e.cmd.c_str();
+    const char32_t *YYMARKER;
+    /*!re2c
+    re2c:yyfill:enable = 0;
+    re2c:flags:unicode = 1;
+    re2c:define:YYCTYPE = char32_t;
+    "$" {
+        e.cmd = {};
+        e.buf = buffer_move_end_of_line(std::move(e.buf));
+        return e;
+    }
+    "A" {
+        e.cmd = {};
+        e.mode = MODE_INSERT;
+        if (!e.history.size() || e.history.back().lines != e.buf.lines) {
+            e.history.push_back(e.buf);
         }
-        case 'g': {
-            switch (c = getchar_utf8()) {
-            case 'g':
-                return {buffer_move_start(std::move(b)), s, w};
-            default:
-                return {b,s,w};
-            }
+        e.buf = buffer_move_end_of_line(std::move(e.buf));
+        return e;
+    }
+    "G" {
+        e.cmd = {};
+        e.buf = buffer_move_end(std::move(e.buf));
+        return e;
+    }
+    "dd" {
+        e.cmd = {};
+        e.history.push_back(e.buf);
+        e.future.clear();
+        e.buf = buffer_erase_current_line(std::move(e.buf));
+        return e;
+    }
+    "gg" {
+        e.cmd = {};
+        e.buf = buffer_move_start(std::move(e.buf));
+        return e;
+    }
+    "i" {
+        e.cmd = {};
+        e.mode = MODE_INSERT;
+        if (!e.history.size() || e.history.back().lines != e.buf.lines) {
+            e.history.push_back(e.buf);
         }
-        case 'h':
-            return {buffer_move_left(std::move(b), n ? n : 1), std::move(s), w};
-        case 'i':
-            s.mode = MODE_INSERT;
-            if (!s.history.size() || s.history.back().lines != b.lines) {
-                s.history.push_back(b);
-            }
-            return {std::move(b), std::move(s), std::move(w)};
-        case 'j':
-            return {buffer_move_down(std::move(b), n ? n : 1),
-                        std::move(s), std::move(w)};
-        case 'k':
-            return {buffer_move_up(std::move(b), n ? n : 1), std::move(s), w};
-        case 'l':
-            return {buffer_move_right(std::move(b), n ? n : 1),
-                    std::move(s), w};
-        case 'u':
-            if (s.history.empty()) {
-                s.status = "History empty!";
-            } else {
-                s.future.push_back(std::move(b));
-                b = std::move(s.history.back());
-                s.history.pop_back();
-            }
-            return {std::move(b), std::move(s), w};
-        case 'r':
-            if (s.future.empty()) {
-                s.status = "Future empty!";
-            } else {
-                s.history.push_back(std::move(b));
-                b = std::move(s.future.back());
-                s.future.pop_back();
-            }
-            return {std::move(b), std::move(s), w};
-        case 'q':
-            exit(0);
-        case U'∂':
-            s.status = "deriving";
-            return {std::move(b), std::move(s), w};
-        case 's':
-            file_save("test2", b); return {std::move(b), std::move(s), w};
-        default:
-            return {b,s,w};
+        return e;
+    }
+    "0" {
+        e.cmd = {};
+        e.buf = buffer_move_start_of_line(std::move(e.buf));
+        return e;
+    }
+    ([1-9][0-9]*)? "h" {
+        e.cmd = {};
+        e.buf = buffer_move_left(std::move(e.buf), 1);
+        return e;
+    }
+    ([1-9][0-9]*)? "j" {
+        e.cmd = {};
+        e.buf = buffer_move_down(std::move(e.buf), 1);
+        return e;
+    }
+    ([1-9][0-9]*)? "k" {
+        e.cmd = {};
+        e.buf = buffer_move_up(std::move(e.buf), 1);
+        return e;
+    }
+    ([1-9][0-9]*)? "l" {
+        e.cmd = {};
+        e.buf = buffer_move_right(std::move(e.buf), 1);
+        return e;
+    }
+    "u" {
+        e.cmd = {};
+        if (e.history.empty()) {
+            sprintf(e.status, "History empty!");
+        } else {
+            e.future.push_back(std::move(e.buf));
+            e.buf = std::move(e.history.back());
+            e.history.pop_back();
         }
-    case MODE_INSERT:
-        switch (c) {
-        case '\x7f':
-        case '\b':
-            s.future.clear();
-            return {buffer_erase(std::move(b)), s, w};
-        case '\x1b':
-            s.mode = MODE_NORMAL;
-            if (b.lines == s.history.back().lines) {
-                s.history.pop_back();
-            }
-            return {buffer_move_left(std::move(b), 1), std::move(s), w};
-        case '\r':
-            s.future.clear();
-            return {buffer_break_line(std::move(b)), s, w};
-        case '\t':
-            s.future.clear();
-            return {buffer_indent(std::move(b)), s, w};
-        default:
-            s.future.clear();
-            return {buffer_insert(std::move(b), c), s, w};
+        return e;
+    }
+    "r" {
+        e.cmd = {};
+        if (e.future.empty()) {
+            sprintf(e.status, "Future empty!");
+        } else {
+            e.history.push_back(std::move(e.buf));
+            e.buf = std::move(e.future.back());
+            e.future.pop_back();
         }
-    default:
-        break;
+        return e;
+    }
+    "q" {
+        e.cmd = {};
+        e.exiting = true;
+        return e;
+    }
+    "∂" {
+        e.cmd = {};
+        sprintf(e.status, "deriving...");
+        return e;
+    }
+    "s" {
+        e.cmd = {};
+        e.saving = true;
+        return e;
+    }
+    * {
+        // if yych == '\0' we have read until end, i.e. the command
+        // is a prefix of some command
+        if (yych != '\0') {
+            sprintf(e.status, "Unknown command %s",
+                    utf8_encode(e.cmd.c_str()).c_str());
+            e.cmd = {};
+        }
+        return e;
+    }
+    */
+    return e;
+}
+
+editor editor_handle_command_insert(editor e) {
+    const char32_t *YYCURSOR = e.cmd.c_str();
+    /*!re2c
+    re2c:yyfill:enable = 0;
+    re2c:define:YYCTYPE = char32_t;
+    "\x7f" | "\b" {
+        e.cmd = {};
+        e.future.clear();
+        e.buf = buffer_erase(std::move(e.buf));
+        return e;
+    }
+    "\x1b" {
+        e.cmd = {};
+        e.mode = MODE_NORMAL;
+        if (e.buf.lines == e.history.back().lines) {
+            e.history.pop_back();
+        }
+        e.buf = buffer_move_left(std::move(e.buf), 1);
+        return e;
+    }
+    "\r" {
+        e.cmd = {};
+        e.future.clear();
+        e.buf = buffer_break_line(std::move(e.buf));
+        return e;
+    }
+    "\t" {
+        e.cmd = {};
+        e.future.clear();
+        e.buf = buffer_indent(std::move(e.buf));
+        return e;
+    }
+    * {
+        e.cmd = {};
+        e.buf = buffer_insert(std::move(e.buf), yych);
+        return e;
+    }
+    */
+    return e;
+}
+
+editor editor_handle_command(editor e) {
+    if (e.mode == MODE_INSERT) {
+        return editor_handle_command_insert(std::move(e));
+    } else if (e.mode == MODE_NORMAL) {
+        return editor_handle_command_normal(std::move(e));
     }
     assert(false);
-    return {b, s, w};
+    return e;
 }
 
 /**
- * TODO: Pure function?
- * Could return a string that should be written to stdout.
+ * Pure function
  */
-editor editor_draw(buffer buf, state s, window win) {
-    using std::chrono::duration_cast;
-    using std::chrono::high_resolution_clock;
-    using std::chrono::milliseconds;
+void editor_draw(const editor& e) {
+    window win {};
     win = window_update_size(win);
-    win = window_update_scroll(buf, win);
-    window_render(buf, win);
-    if (s.status) {
-        printf("\033[%ld;%ldH%s\033[K", win.height, 0ul, s.status);
-        s.status = NULL;
+    win = window_update_scroll(e.buf, win);
+    window_render(e.buf, win);
+    if (strlen(e.status)) {
+        printf("\033[%ld;%ldH%s\033[K", win.height, 0ul, e.status);
+    } else {
+        printf("\033[%ld;%ldH%s\033[K", win.height, 0ul,
+                            utf8_encode(e.cmd.c_str()).c_str());
     }
-    s.timer_end = high_resolution_clock::now();
-    auto diff = duration_cast<milliseconds>(s.timer_end-s.timer_start).count();
-    printf("\033[%ld;%ldH%4ld", win.height, win.width - 4, diff % 1000);
-    window_render_cursor(buf, win, s.mode == MODE_INSERT);
-    return {
-        std::move(buf),
-        std::move(s),
-        std::move(win)
-    };
+    window_render_cursor(e.buf, win, e.mode == MODE_INSERT);
 }
 
 int main(int argc, char* argv[]) {
-    editor ed {};
+    editor e {};
+    timer t {};
     if (argc > 1) {
-        std::get<0>(ed) = file_load(argv[1]);
+        e.buf = file_load(argv[1]);
     } else {
-        std::get<0>(ed) = {{std::make_shared<buffer_line>()}, {0, 0}};
+        e.buf = {{std::make_shared<buffer_line>()}, {0, 0}};
     }
     assert(tty_enable_raw_mode() == 0);
     while (true) {
-        ed = editor_draw(std::move(std::get<0>(ed)),
-                         std::move(std::get<1>(ed)),
-                         std::move(std::get<2>(ed)));
-        ed = editor_handle_input(std::move(std::get<0>(ed)),
-                                 std::move(std::get<1>(ed)),
-                                 std::move(std::get<2>(ed)),
-                                 std::cin);
+        editor_draw(e);
+        e.status[0] = '\0';
+        t.report("render:    ");
+        e.cmd.push_back(getchar_utf8());
+        t.start();
+        e = editor_handle_command(std::move(e));
+        t.report("handle cmd:");
+        t.start();
+        if (e.exiting) break;
     }
     return 0;
 }

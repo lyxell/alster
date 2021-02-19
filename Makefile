@@ -10,7 +10,7 @@ CXXFLAGS=-std=c++17 \
 		 -Wswitch-default \
 		 -Wdisabled-optimization
 
-build/alster: alster.cpp buffer.cpp build/syntax/c_re2c.cpp build/syntax/c_string_re2c.cpp tty.cpp \
+build/alster: build/alster_re2c.cpp buffer.cpp build/syntax/c_re2c.cpp build/syntax/c_string_re2c.cpp tty.cpp \
 			  buffer.h build/window_re2c.cpp file.cpp file.h utf8.cpp
 			 
 	mkdir -p build
@@ -18,7 +18,7 @@ build/alster: alster.cpp buffer.cpp build/syntax/c_re2c.cpp build/syntax/c_strin
 		$(CXXFLAGS) \
 		-I. \
 		-Isyntax \
-		alster.cpp \
+		build/alster_re2c.cpp \
 		buffer.cpp \
 		utf8.cpp \
 		tty.cpp \
@@ -47,7 +47,7 @@ build/fuzzer: build/alster_re2c.cpp buffer.cpp \
 
 build/%_re2c.cpp: %.cpp
 	mkdir -p $(@D)
-	re2c -W -i $< -o $@
+	re2c -W --input-encoding utf8 -i $< -o $@
 
 .PHONY: clean
 clean:
