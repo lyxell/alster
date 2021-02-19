@@ -19,7 +19,6 @@ window window_update_scroll(const buffer& buf, window w) {
 void window_render(const buffer& buf, window w) {
     static char command[10000];
     command[0] = '\0';
-    w.height -= 1;
     for (size_t y = 0; y < w.height; y++) {
         if (buf.lines.size() > y + w.scroll) {
             auto line = *buf.lines[y + w.scroll];

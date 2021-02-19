@@ -43,9 +43,7 @@ struct editor {
     bool saving;
 };
 
-/**
- * Pure function
- */
+// pure function
 editor editor_handle_command_normal(editor e) {
     const char32_t *YYCURSOR = e.cmd.c_str();
     const char32_t *YYMARKER;
@@ -161,6 +159,8 @@ editor editor_handle_command_normal(editor e) {
             sprintf(e.status, "Unknown command %s",
                     utf8_encode(e.cmd.c_str()).c_str());
             e.cmd = {};
+        } else {
+            sprintf(e.status, "%s", utf8_encode(e.cmd.c_str()).c_str());
         }
         return e;
     }
@@ -168,6 +168,7 @@ editor editor_handle_command_normal(editor e) {
     return e;
 }
 
+// pure function
 editor editor_handle_command_insert(editor e) {
     const char32_t *YYCURSOR = e.cmd.c_str();
     /*!re2c
@@ -209,6 +210,7 @@ editor editor_handle_command_insert(editor e) {
     return e;
 }
 
+// pure function
 editor editor_handle_command(editor e) {
     if (e.mode == MODE_INSERT) {
         return editor_handle_command_insert(std::move(e));
@@ -218,26 +220,21 @@ editor editor_handle_command(editor e) {
     return e;
 }
 
-/**
- * Pure function
- */
-void editor_draw(const editor& e) {
-    window win {};
+window editor_draw(const editor& e, window win) {
     win = window_update_size(win);
     win = window_update_scroll(e.buf, win);
     window_render(e.buf, win);
     if (strlen(e.status)) {
         printf("\033[%ld;%ldH%s\033[K", win.height, 0ul, e.status);
-    } else {
-        printf("\033[%ld;%ldH%s\033[K", win.height, 0ul,
-                            utf8_encode(e.cmd.c_str()).c_str());
     }
     window_render_cursor(e.buf, win, e.mode == MODE_INSERT);
+    return win;
 }
 
 int main(int argc, char* argv[]) {
     editor e {};
     timer t {};
+    window win {};
     if (argc > 1) {
         e.buf = file_load(argv[1]);
     } else {
@@ -245,7 +242,7 @@ int main(int argc, char* argv[]) {
     }
     assert(tty_enable_raw_mode() == 0);
     while (true) {
-        editor_draw(e);
+        win = editor_draw(e, win);
         e.status[0] = '\0';
         t.report("render:    ");
         e.cmd.push_back(getchar_utf8());

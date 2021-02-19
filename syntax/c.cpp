@@ -46,7 +46,8 @@ token_collection tokenize_c(const char32_t* str) {
         }
 
         ("FILE" | "bool" | "char" | "const" | "double" | "auto"
-        | "float" | "int" | "size_t" | "void" | "struct" | "enum") "*" * {
+        | "float" | "int" | "size_t" | "void" | "struct" | "enum" | "char32_t")
+        "*" * {
             tokens.emplace_back(YYSTART, YYCURSOR, C_TYPE);
             continue;
         }
