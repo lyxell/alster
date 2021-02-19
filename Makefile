@@ -7,7 +7,6 @@ CXXFLAGS=-std=c++17 \
 		 -Wconversion \
 		 -Wshadow \
 		 -Werror \
-		 -Wswitch-default \
 		 -Wdisabled-optimization
 
 build/alster: build/alster_re2c.cpp buffer.cpp build/syntax/c_re2c.cpp build/syntax/c_string_re2c.cpp tty.cpp \

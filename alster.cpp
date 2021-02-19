@@ -51,6 +51,29 @@ editor editor_handle_command_normal(editor e) {
     re2c:yyfill:enable = 0;
     re2c:flags:unicode = 1;
     re2c:define:YYCTYPE = char32_t;
+    ([1-9][0-9]*)? ("h" | "j" | "k" | "l") {
+        e.cmd = {};
+        switch (yych) {
+        case 'h': e.buf = buffer_move_left(std::move(e.buf),  1); break;
+        case 'j': e.buf = buffer_move_down(std::move(e.buf),  1); break;
+        case 'k': e.buf = buffer_move_up(std::move(e.buf),    1); break;
+        case 'l': e.buf = buffer_move_right(std::move(e.buf), 1); break;
+        }
+        return e;
+    }
+    ([1-9][0-9]*)? ("u" | "r") {
+        e.cmd = {};
+        auto& pop_from = yych == 'u' ? e.history : e.future;
+        auto& push_to = yych == 'u' ? e.future : e.history;
+        if (pop_from.empty()) {
+            sprintf(e.status, "%s empty!", yych == 'u' ? "History" : "Future");
+        } else {
+            push_to.push_back(std::move(e.buf));
+            e.buf = std::move(pop_from.back());
+            pop_from.pop_back();
+        }
+        return e;
+    }
     "$" {
         e.cmd = {};
         e.buf = buffer_move_end_of_line(std::move(e.buf));
@@ -90,51 +113,9 @@ editor editor_handle_command_normal(editor e) {
         }
         return e;
     }
-    "0" {
+    "0" | "^" {
         e.cmd = {};
         e.buf = buffer_move_start_of_line(std::move(e.buf));
-        return e;
-    }
-    ([1-9][0-9]*)? "h" {
-        e.cmd = {};
-        e.buf = buffer_move_left(std::move(e.buf), 1);
-        return e;
-    }
-    ([1-9][0-9]*)? "j" {
-        e.cmd = {};
-        e.buf = buffer_move_down(std::move(e.buf), 1);
-        return e;
-    }
-    ([1-9][0-9]*)? "k" {
-        e.cmd = {};
-        e.buf = buffer_move_up(std::move(e.buf), 1);
-        return e;
-    }
-    ([1-9][0-9]*)? "l" {
-        e.cmd = {};
-        e.buf = buffer_move_right(std::move(e.buf), 1);
-        return e;
-    }
-    "u" {
-        e.cmd = {};
-        if (e.history.empty()) {
-            sprintf(e.status, "History empty!");
-        } else {
-            e.future.push_back(std::move(e.buf));
-            e.buf = std::move(e.history.back());
-            e.history.pop_back();
-        }
-        return e;
-    }
-    "r" {
-        e.cmd = {};
-        if (e.future.empty()) {
-            sprintf(e.status, "Future empty!");
-        } else {
-            e.history.push_back(std::move(e.buf));
-            e.buf = std::move(e.future.back());
-            e.future.pop_back();
-        }
         return e;
     }
     "q" {
@@ -153,14 +134,14 @@ editor editor_handle_command_normal(editor e) {
         return e;
     }
     * {
-        // if yych == '\0' we have read until end, i.e. the command
-        // is a prefix of some command
-        if (yych != '\0') {
+        // if yych == '\0' we have read until end, i.e.
+        // the command must be a prefix of some command
+        if (yych == '\0') {
+            sprintf(e.status, "%s", utf8_encode(e.cmd.c_str()).c_str());
+        } else {
             sprintf(e.status, "Unknown command %s",
                     utf8_encode(e.cmd.c_str()).c_str());
             e.cmd = {};
-        } else {
-            sprintf(e.status, "%s", utf8_encode(e.cmd.c_str()).c_str());
         }
         return e;
     }
