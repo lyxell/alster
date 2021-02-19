@@ -13,8 +13,6 @@
 std::chrono::time_point<std::chrono::high_resolution_clock> start;
 std::chrono::time_point<std::chrono::high_resolution_clock> end;
 
-#define KEY_ESCAPE '\x1b'
-
 enum {
     MODE_NORMAL,
     MODE_INSERT
