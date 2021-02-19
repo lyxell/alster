@@ -1,6 +1,10 @@
 #include <algorithm>
 #include "buffer.h"
 
+/**
+ * All of these are pure functions modulo memory allocations.
+ */
+
 static buffer_char bracket_left_to_right(buffer_char c) {
     switch (c) {
         case '(': return ')';

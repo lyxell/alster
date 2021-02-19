@@ -28,6 +28,9 @@ struct state {
 
 using editor = std::tuple<buffer,state,window>;
 
+/**
+ * TODO: Should be a pure function!
+ */
 editor editor_handle_input(buffer b, state s, window w, std::istream& in) {
     size_t n = 0;
 loop:
@@ -145,6 +148,10 @@ loop:
     return {b, s, w};
 }
 
+/**
+ * TODO: Pure function?
+ * Could return a string that should be written to stdout.
+ */
 editor editor_draw(buffer buf, state s, window win) {
     using std::chrono::duration_cast;
     using std::chrono::high_resolution_clock;
