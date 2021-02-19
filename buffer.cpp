@@ -129,6 +129,10 @@ buffer buffer_erase(buffer buf) {
         if (lines[y].use_count() > 1) {
             lines[y] = std::make_shared<buffer_line>(*lines[y]);
         }
+        // remove corresponding bracket
+        if (x + 1 < lines[y]->size() && bracket_left_to_right(lines[y]->at(x)) == lines[y]->at(x+1)) {
+            lines[y]->erase(lines[y]->begin() + x + 1);
+        }
         lines[y]->erase(lines[y]->begin() + x);
     } else if (y > 0) {
         y = y - 1;
