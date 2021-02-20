@@ -9,7 +9,7 @@ CXXFLAGS=-std=c++17 \
 		 -Werror \
 		 -Wdisabled-optimization
 
-build/alster: build/alster_re2c.cpp buffer.cpp build/syntax/c_re2c.cpp build/syntax/c_string_re2c.cpp tty.cpp \
+build/alster: alster.cpp buffer.cpp build/syntax/c_re2c.cpp build/syntax/c_string_re2c.cpp tty.cpp build/editor_re2c.cpp \
 			  buffer.h build/window_re2c.cpp file.cpp file.h utf8.cpp
 			 
 	mkdir -p build
@@ -17,9 +17,10 @@ build/alster: build/alster_re2c.cpp buffer.cpp build/syntax/c_re2c.cpp build/syn
 		$(CXXFLAGS) \
 		-I. \
 		-Isyntax \
-		build/alster_re2c.cpp \
+		alster.cpp \
 		buffer.cpp \
 		utf8.cpp \
+		build/editor_re2c.cpp \
 		tty.cpp \
 		build/syntax/c_re2c.cpp \
 		build/syntax/c_string_re2c.cpp \
@@ -27,7 +28,7 @@ build/alster: build/alster_re2c.cpp buffer.cpp build/syntax/c_re2c.cpp build/syn
 		file.cpp \
 		 -o $@
 
-build/test_tokenize: test/test_tokenize.cpp build/syntax/c_re2c.cpp build/syntax/c_string_re2c.cpp utf8.cpp
+build/test: test/main.cpp build/editor_re2c.cpp utf8.cpp buffer.cpp window.cpp build/syntax/c_re2c.cpp build/syntax/c_string_re2c.cpp
 	$(CXX) $(CXXFLAGS) $^ -I. -Isyntax -o $@
 
 build/fuzzer: build/alster_re2c.cpp buffer.cpp \

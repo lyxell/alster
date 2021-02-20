@@ -30,3 +30,25 @@ int main() {
 ```
 
 To do it in vim, use: "]}o"
+
+## Something that no editor does
+
+```
+int main() {}
+            ↑ cursor here
+```
+press enter
+```
+int main() {
+    
+    ↑ cursor here
+}
+```
+press backspace
+```
+int main() {}
+            ↑ cursor here
+```
+
+Works in vscode, but you need Ctrl+Z instead
+of backspace
