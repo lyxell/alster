@@ -74,6 +74,18 @@ editor editor_handle_command_normal(editor e) {
         }
         return e;
     }
+    "o" | "O" {
+        e.cmd = {};
+        e.history.push_back(e.buf);
+        e.future.clear();
+        if (yych == 'O') {
+            e.buf = buffer_move_up(std::move(e.buf), 1);
+        }
+        e.buf = buffer_move_end_of_line(std::move(e.buf));
+        e.buf = buffer_break_line(std::move(e.buf));
+        e.mode = MODE_INSERT;
+        return e;
+    }
     "$" {
         e.cmd = {};
         e.buf = buffer_move_end_of_line(std::move(e.buf));
