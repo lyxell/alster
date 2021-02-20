@@ -5,6 +5,22 @@
  * All of these are pure functions modulo memory allocations.
  */
 
+/**
+ * Report whether we have an underflow, overflow or
+ * a balance of brackets on a line.
+ */
+static int bracket_balance(const buffer_line& line) {
+    int count = 0;
+    for (auto c : line) {
+        if (c == '(' || c == '[' || c == '{') {
+            count++;
+        } else if (c == ')' || c == ']' || c == '}') {
+            count--;
+        }
+    }
+    return count;
+}
+
 static buffer_char opposite_bracket(buffer_char c) {
     switch (c) {
         case '(': return ')';
@@ -119,12 +135,18 @@ buffer buffer_break_line(buffer buf) {
     if (lines[y].use_count() > 1) {
         lines[y] = std::make_shared<buffer_line>(*lines[y]);
     }
-    auto& line = *lines[y];
-    lines.insert(lines.begin() + y + 1,
-                std::make_shared<buffer_line>(line.substr(x)));
-    line.erase(x);
+    lines.insert(lines.begin() + y + 1, std::make_shared<buffer_line>());
+    auto& upper_line = *lines[y];
+    auto& lower_line = *lines[y+1];
+    lower_line.insert(lower_line.size(), upper_line.substr(x));
+    upper_line.erase(x);
     x = 0;
     y++;
+    /* TODO: improve */
+    if (bracket_balance(upper_line) > 0) {
+        lower_line.insert(0, 4, ' ');
+        x += 4;
+    }
     return buf;
 }
 
