@@ -21,6 +21,15 @@ static int bracket_balance(const buffer_line& line) {
     return count;
 }
 
+static int indentation_level(const buffer_line& line) {
+    int count = 0;
+    for (auto c : line) {
+        if (c == ' ') count++;
+        else break;
+    }
+    return count;
+}
+
 static buffer_char opposite_bracket(buffer_char c) {
     switch (c) {
         case '(': return ')';
@@ -142,6 +151,10 @@ buffer buffer_break_line(buffer buf) {
     upper_line.erase(x);
     x = 0;
     y++;
+    /* use same indentation as previous line */
+    lower_line.insert(0, indentation_level(upper_line), ' ');
+    x += indentation_level(upper_line);
+    /* increase indentation if the previous line has an open bracket */
     /* TODO: improve */
     if (bracket_balance(upper_line) > 0) {
         lower_line.insert(0, 4, ' ');
