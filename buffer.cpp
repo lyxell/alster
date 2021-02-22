@@ -157,6 +157,10 @@ buffer buffer_break_line(buffer buf) {
     /* increase indentation if the previous line has an open bracket */
     /* TODO: improve */
     if (bracket_balance(upper_line) > 0) {
+        if (lower_line.substr(x) == U"}" || lower_line.substr(x) == U")") {
+            lines.insert(lines.begin() + y + 1, std::make_shared<buffer_line>(lower_line));
+            lower_line.erase(x);
+        }
         lower_line.insert(0, 4, ' ');
         x += 4;
     }

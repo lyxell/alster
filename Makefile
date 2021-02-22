@@ -49,6 +49,8 @@ build/%_re2c.cpp: %.cpp
 	mkdir -p $(@D)
 	re2c -W --input-encoding utf8 -i $< -o $@
 
-.PHONY: clean
+.PHONY: clean test
 clean:
 	rm -rf build
+test: build/test
+	./build/test
