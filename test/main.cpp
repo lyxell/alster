@@ -30,6 +30,9 @@ int main() {
         {U"ihello\rworld", U"hello\nworld"},
         {U"i{\r", U"{\n    \n}"},
         {U"i{\r{\r{\r", U"{\n    {\n        {\n            \n        }\n    }\n}"},
+        {U"i}\r", U"}\n"},
+        {U"i{}\r", U"{}\n"},
+        {U"i}}}{\rhello", U"}}}{\n    hello\n}"},
     };
     for (auto [l, r] : test_cases) {
         editor e {};

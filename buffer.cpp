@@ -14,7 +14,7 @@ static int bracket_balance(const buffer_line& line) {
     for (auto c : line) {
         if (c == '(' || c == '[' || c == '{') {
             count++;
-        } else if (c == ')' || c == ']' || c == '}') {
+        } else if (count > 0 && (c == ')' || c == ']' || c == '}')) {
             count--;
         }
     }

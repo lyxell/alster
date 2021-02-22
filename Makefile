@@ -1,13 +1,11 @@
 CXXFLAGS=-std=c++17 \
-		 -static \
-		 -Wall \
 		 -g \
 		 -O2 \
-		 -Wfatal-errors \
-		 -Wconversion \
+		 -Wall \
 		 -Wshadow \
-		 -Werror \
-		 -Wdisabled-optimization
+		 -Wconversion \
+		 -Wfatal-errors \
+		 -Werror
 
 build/alster: alster.cpp buffer.cpp build/syntax/c_re2c.cpp build/syntax/c_string_re2c.cpp tty.cpp build/editor_re2c.cpp \
 			  buffer.h build/window_re2c.cpp file.cpp file.h utf8.cpp

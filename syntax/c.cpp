@@ -13,7 +13,7 @@ token_collection tokenize_c(const char32_t* str) {
         re2c:yyfill:enable = 0;
         re2c:define:YYCTYPE = char32_t;
 
-        "\"" [^"\n\x00]* "\"" {
+        ("U" | "u" | "u8")? "\"" [^"\n\x00]* "\"" {
             auto res = tokenize_c_string(YYSTART);
             std::copy(res.begin(), res.end(),
                       std::back_inserter(tokens));
