@@ -16,70 +16,57 @@ window window_update_scroll(const buffer& buf, window w) {
     return w;
 }
 
+int token_to_color(int t) {
+    switch (t) {
+        case C_PUNCTUATOR:
+        case C_SINGLE_LINE_COMMENT:
+            return COLOR_BRIGHT_BLACK;
+        case C_LITERAL_DECIMAL:
+        case C_LITERAL_OCTAL:
+        case C_LITERAL_BOOL:
+            return COLOR_RED;
+        case C_STRING_CHAR:
+            return COLOR_CYAN;
+        case C_STRING_ESCAPE_SEQUENCE:
+            return COLOR_GREEN;
+        case C_STRING_ENCODING_PREFIX:
+        case C_STRING_OPENING_QUOTE:
+        case C_STRING_CLOSING_QUOTE:
+        case C_TYPE:
+            return COLOR_BLUE;
+        case C_KEYWORD:
+            return COLOR_MAGENTA;
+        default:
+            break;
+    }
+    return COLOR_RESET;
+}
+
 void window_render(const buffer& buf, window w, std::optional<buffer_position> visual_marker) {
     static char command[10000];
     command[0] = '\0';
     for (size_t y = 0; y < w.height; y++) {
-        if (buf.lines.size() > y + w.scroll) {
-            auto line = *buf.lines[y + w.scroll];
-            /* clear line */
-            /*
-            sprintf(command+strlen(command),
-                    "\x1b[%ld;%dH%04lx %02ld\x1b[K ", (y+1), 1,
-                    size_t(buf.lines[y+w.scroll].get()) & 0xffff,
-                    buf.lines[y+w.scroll].use_count());
-            */
-            sprintf(command+strlen(command),
-                    "\x1b[%ld;%dH\x1b[K", (y+1), 1);
-            /* draw chars in line */
-            size_t x = 0;
-            for (auto [s, e, t] : tokenize_c(line.c_str())) {
-                if (std::pair(y, x) > std::pair(buf.pos.y, buf.pos.x)) {
-                    sprintf(command+strlen(command), "\x1b[%dm", COLOR_YELLOW);
-                } else {
-                    switch (t) {
-                        case C_PUNCTUATOR:
-                        case C_SINGLE_LINE_COMMENT:
-                            sprintf(command+strlen(command), "\x1b[%dm", COLOR_BRIGHT_BLACK);
-                            break;
-                        case C_LITERAL_DECIMAL:
-                        case C_LITERAL_OCTAL:
-                        case C_LITERAL_BOOL:
-                            sprintf(command+strlen(command), "\x1b[%dm", COLOR_RED);
-                            break;
-                        case C_STRING_CHAR:
-                            sprintf(command+strlen(command), "\x1b[%dm", COLOR_CYAN);
-                            break;
-                        case C_STRING_ESCAPE_SEQUENCE:
-                            sprintf(command+strlen(command), "\x1b[%dm", COLOR_GREEN);
-                            break;
-                        case C_STRING_ENCODING_PREFIX:
-                        case C_STRING_OPENING_QUOTE:
-                        case C_STRING_CLOSING_QUOTE:
-                        case C_TYPE:
-                            sprintf(command+strlen(command), "\x1b[%dm", COLOR_BLUE);
-                            break;
-                        case C_KEYWORD:
-                            sprintf(command+strlen(command), "\x1b[%dm", COLOR_MAGENTA);
-                            break;
-                        default:
-                            sprintf(command+strlen(command), "\x1b[%dm", COLOR_RESET);
-                            break;
-                    }
-                }
-                auto str = std::u32string(s, e);
-                for (auto ch : str) {
-                    if (x < w.width) {
-                        std::u32string output;
-                        output += ch;
-                        sprintf(command+strlen(command), "%s", utf8_encode(output).c_str());
-                    }
-                    x++;
-                }
-                sprintf(command+strlen(command), "\x1b[%dm", COLOR_RESET);
+        sprintf(command + strlen(command), "\x1b[%ld;%dH\x1b[K", (y+1), 1);
+        if (y + w.scroll >= buf.lines.size()) continue;
+        auto tokens = tokenize_c(buf.lines[y + w.scroll]->c_str());
+        size_t x = 0;
+        for (auto [s, e, t] : tokens) {
+            if (std::pair(y, x) > std::pair(buf.pos.y, buf.pos.x)) {
+                sprintf(command + strlen(command), "\x1b[%dm", COLOR_YELLOW);
+            } else {
+                sprintf(command + strlen(command), "\x1b[%dm",
+                        token_to_color(t));
             }
-        } else {
-            sprintf(command+strlen(command), "\x1b[%ld;%dH\x1b[K ", (y+1), 1);
+            auto str = std::u32string(s, e);
+            for (auto ch : str) {
+                if (x < w.width) {
+                    std::u32string output;
+                    output += ch;
+                    sprintf(command + strlen(command), "%s", utf8_encode(output).c_str());
+                }
+                x++;
+            }
+            sprintf(command + strlen(command), "\x1b[%dm", COLOR_RESET);
         }
     }
     printf("%s", command);
