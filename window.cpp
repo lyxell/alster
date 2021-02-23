@@ -72,7 +72,7 @@ void window_render(const buffer& buf, window w, std::optional<buffer_position> v
                     if (x < w.width) {
                         std::u32string output;
                         output += ch;
-                        sprintf(command+strlen(command), utf8_encode(output).c_str());
+                        sprintf(command+strlen(command), "%s", utf8_encode(output).c_str());
                     }
                     x++;
                 }
@@ -82,7 +82,7 @@ void window_render(const buffer& buf, window w, std::optional<buffer_position> v
             sprintf(command+strlen(command), "\x1b[%ld;%dH\x1b[K ", (y+1), 1);
         }
     }
-    printf(command);
+    printf("%s", command);
 }
 
 void window_render_cursor(const buffer& buf, window w, bool insert) {
