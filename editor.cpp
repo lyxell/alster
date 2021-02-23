@@ -182,7 +182,7 @@ window editor_draw(const editor& e, window win) {
     win = window_update_scroll(e.buf, win);
     window_render(e.buf, win);
     if (strlen(e.status)) {
-        printf("\033[%ld;%ldH%s\033[K", win.height, 0ul, e.status);
+        printf("\x1b[%ld;%ldH%s\033[K", win.height, 0ul, e.status);
     }
     window_render_cursor(e.buf, win, e.mode == MODE_INSERT);
     return win;

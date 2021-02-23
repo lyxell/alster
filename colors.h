@@ -30,5 +30,5 @@ enum {
 };
 
 void set_color(int color) {
-    printf("\033[%dm", color);
+    printf("\x1b[%dm", color);
 }

@@ -24,7 +24,7 @@ void window_render(const buffer& buf, window w) {
             auto line = *buf.lines[y + w.scroll];
             /* clear line */
             sprintf(command+strlen(command),
-                    "\033[%ld;%dH%04lx %02ld\033[K ", (y+1), 1,
+                    "\x1b[%ld;%dH%04lx %02ld\x1b[K ", (y+1), 1,
                     size_t(buf.lines[y+w.scroll].get()) & 0xffff,
                     buf.lines[y+w.scroll].use_count());
             /* draw chars in line */
@@ -33,30 +33,30 @@ void window_render(const buffer& buf, window w) {
                 switch (t) {
                     case C_PUNCTUATOR:
                     case C_SINGLE_LINE_COMMENT:
-                        sprintf(command+strlen(command), "\033[%dm", COLOR_BRIGHT_BLACK);
+                        sprintf(command+strlen(command), "\x1b[%dm", COLOR_BRIGHT_BLACK);
                         break;
                     case C_LITERAL_DECIMAL:
                     case C_LITERAL_OCTAL:
                     case C_LITERAL_BOOL:
-                        sprintf(command+strlen(command), "\033[%dm", COLOR_RED);
+                        sprintf(command+strlen(command), "\x1b[%dm", COLOR_RED);
                         break;
                     case C_STRING_CHAR:
-                        sprintf(command+strlen(command), "\033[%dm", COLOR_CYAN);
+                        sprintf(command+strlen(command), "\x1b[%dm", COLOR_CYAN);
                         break;
                     case C_STRING_ESCAPE_SEQUENCE:
-                        sprintf(command+strlen(command), "\033[%dm", COLOR_GREEN);
+                        sprintf(command+strlen(command), "\x1b[%dm", COLOR_GREEN);
                         break;
                     case C_STRING_ENCODING_PREFIX:
                     case C_STRING_OPENING_QUOTE:
                     case C_STRING_CLOSING_QUOTE:
                     case C_TYPE:
-                        sprintf(command+strlen(command), "\033[%dm", COLOR_BLUE);
+                        sprintf(command+strlen(command), "\x1b[%dm", COLOR_BLUE);
                         break;
                     case C_KEYWORD:
-                        sprintf(command+strlen(command), "\033[%dm", COLOR_MAGENTA);
+                        sprintf(command+strlen(command), "\x1b[%dm", COLOR_MAGENTA);
                         break;
                     default:
-                        sprintf(command+strlen(command), "\033[%dm", COLOR_RESET);
+                        sprintf(command+strlen(command), "\x1b[%dm", COLOR_RESET);
                         break;
                 }
                 auto str = std::u32string(s, e);
@@ -68,10 +68,10 @@ void window_render(const buffer& buf, window w) {
                     }
                     x++;
                 }
-                sprintf(command+strlen(command), "\033[%dm", COLOR_RESET);
+                sprintf(command+strlen(command), "\x1b[%dm", COLOR_RESET);
             }
         } else {
-            sprintf(command+strlen(command), "\033[%ld;%dH\033[K ", (y+1), 1);
+            sprintf(command+strlen(command), "\x1b[%ld;%dH\x1b[K ", (y+1), 1);
         }
     }
     printf(command);
@@ -79,11 +79,11 @@ void window_render(const buffer& buf, window w) {
 
 void window_render_cursor(const buffer& buf, window w, bool insert) {
     if (insert) {
-        printf("\033[6 q");
+        printf("\x1b[6 q");
     } else {
-        printf("\033[2 q");
+        printf("\x1b[2 q");
     }
-    printf("\033[%ld;%ldH", buf.pos.y - w.scroll + 1,
+    printf("\x1b[%ld;%ldH", buf.pos.y - w.scroll + 1,
             std::min(buf.pos.x, buf.lines[buf.pos.y]->size()) + 9);
 }
 
