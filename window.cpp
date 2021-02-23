@@ -23,12 +23,16 @@ void window_render(const buffer& buf, window w) {
         if (buf.lines.size() > y + w.scroll) {
             auto line = *buf.lines[y + w.scroll];
             /* clear line */
+            /*
             sprintf(command+strlen(command),
                     "\x1b[%ld;%dH%04lx %02ld\x1b[K ", (y+1), 1,
                     size_t(buf.lines[y+w.scroll].get()) & 0xffff,
                     buf.lines[y+w.scroll].use_count());
+            */
+            sprintf(command+strlen(command),
+                    "\x1b[%ld;%dH\x1b[K", (y+1), 1);
             /* draw chars in line */
-            size_t x = 8;
+            size_t x = 0;
             for (auto [s, e, t] : tokenize_c(line.c_str())) {
                 switch (t) {
                     case C_PUNCTUATOR:
@@ -84,7 +88,7 @@ void window_render_cursor(const buffer& buf, window w, bool insert) {
         printf("\x1b[2 q");
     }
     printf("\x1b[%ld;%ldH", buf.pos.y - w.scroll + 1,
-            std::min(buf.pos.x, buf.lines[buf.pos.y]->size()) + 9);
+            std::min(buf.pos.x, buf.lines[buf.pos.y]->size()) + 1);
 }
 
 window window_update_size(window w) {
