@@ -32,6 +32,7 @@ void window_render(const buffer& buf, window w) {
             for (auto [s, e, t] : tokenize_c(line.c_str())) {
                 switch (t) {
                     case C_PUNCTUATOR:
+                    case C_SINGLE_LINE_COMMENT:
                         sprintf(command+strlen(command), "\033[%dm", COLOR_BRIGHT_BLACK);
                         break;
                     case C_LITERAL_DECIMAL:

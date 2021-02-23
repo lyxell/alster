@@ -13,7 +13,7 @@ token_collection tokenize_c(const char32_t* str) {
         re2c:yyfill:enable = 0;
         re2c:define:YYCTYPE = char32_t;
 
-        ("U" | "u" | "u8")? "\"" [^"\n\x00]* "\"" {
+        ([LUu] | [u][8])? ["] [^"\n\x00]* ["] {
             auto res = tokenize_c_string(YYSTART);
             std::copy(res.begin(), res.end(),
                       std::back_inserter(tokens));
@@ -25,7 +25,7 @@ token_collection tokenize_c(const char32_t* str) {
             continue;
         }
 
-        "0" [0-7]* {
+        [0][0-7]* {
             tokens.emplace_back(YYSTART, YYCURSOR, C_LITERAL_OCTAL);
             continue;
         }
@@ -40,20 +40,20 @@ token_collection tokenize_c(const char32_t* str) {
             continue;
         }
 
-        "//" [^\n\x00]* "\n" {
-            tokens.emplace_back(YYSTART, YYCURSOR, C_SINGLE_LINE_COMMENT);
-            continue;
+        [/][/][^\x00]*[\x00] {
+            tokens.emplace_back(YYSTART, YYCURSOR-1, C_SINGLE_LINE_COMMENT);
+            return tokens;
         }
 
         ("FILE" | "bool" | "char" | "const" | "double" | "auto"
         | "float" | "int" | "size_t" | "void" | "struct" | "enum" | "char32_t")
-        "*" * {
+        [*]* {
             tokens.emplace_back(YYSTART, YYCURSOR, C_TYPE);
             continue;
         }
 
         "break" | "continue" | "else" | "for" | "return" | "if" | "while" |
-        "switch" | "case" | "default" {
+        "switch" | "case" | "default" | "using" {
             tokens.emplace_back(YYSTART, YYCURSOR, C_KEYWORD);
             continue;
         }
@@ -70,7 +70,7 @@ token_collection tokenize_c(const char32_t* str) {
             continue;
         }
 
-        "*"* [a-zA-Z_][a-zA-Z_0-9]* {
+        [*]*[a-zA-Z_][a-zA-Z_0-9]* {
             tokens.emplace_back(YYSTART, YYCURSOR, C_IDENTIFIER);
             continue;
         }
