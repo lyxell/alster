@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
         win = editor_draw(e, win);
         e.status[0] = '\0';
         t.report("render:    ");
-        e.cmd.push_back(getchar_utf8());
+        e.cmd.push_back(utf8_getchar());
         t.start();
         e = editor_handle_command(std::move(e));
         t.report("handle cmd:");
