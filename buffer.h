@@ -11,6 +11,9 @@ struct buffer_position {
     bool operator<(const buffer_position& other) const {
         return std::pair(x, y) < std::pair(other.x, other.y);
     }
+    bool operator>(const buffer_position& other) const {
+        return std::pair(x, y) > std::pair(other.x, other.y);
+    }
     bool operator==(const buffer_position& other) const {
         return std::pair(x, y) == std::pair(other.x, other.y);
     }

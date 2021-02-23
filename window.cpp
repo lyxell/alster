@@ -16,7 +16,7 @@ window window_update_scroll(const buffer& buf, window w) {
     return w;
 }
 
-void window_render(const buffer& buf, window w) {
+void window_render(const buffer& buf, window w, std::optional<buffer_position> visual_marker) {
     static char command[10000];
     command[0] = '\0';
     for (size_t y = 0; y < w.height; y++) {
@@ -34,34 +34,38 @@ void window_render(const buffer& buf, window w) {
             /* draw chars in line */
             size_t x = 0;
             for (auto [s, e, t] : tokenize_c(line.c_str())) {
-                switch (t) {
-                    case C_PUNCTUATOR:
-                    case C_SINGLE_LINE_COMMENT:
-                        sprintf(command+strlen(command), "\x1b[%dm", COLOR_BRIGHT_BLACK);
-                        break;
-                    case C_LITERAL_DECIMAL:
-                    case C_LITERAL_OCTAL:
-                    case C_LITERAL_BOOL:
-                        sprintf(command+strlen(command), "\x1b[%dm", COLOR_RED);
-                        break;
-                    case C_STRING_CHAR:
-                        sprintf(command+strlen(command), "\x1b[%dm", COLOR_CYAN);
-                        break;
-                    case C_STRING_ESCAPE_SEQUENCE:
-                        sprintf(command+strlen(command), "\x1b[%dm", COLOR_GREEN);
-                        break;
-                    case C_STRING_ENCODING_PREFIX:
-                    case C_STRING_OPENING_QUOTE:
-                    case C_STRING_CLOSING_QUOTE:
-                    case C_TYPE:
-                        sprintf(command+strlen(command), "\x1b[%dm", COLOR_BLUE);
-                        break;
-                    case C_KEYWORD:
-                        sprintf(command+strlen(command), "\x1b[%dm", COLOR_MAGENTA);
-                        break;
-                    default:
-                        sprintf(command+strlen(command), "\x1b[%dm", COLOR_RESET);
-                        break;
+                if (std::pair(y, x) > std::pair(buf.pos.y, buf.pos.x)) {
+                    sprintf(command+strlen(command), "\x1b[%dm", COLOR_YELLOW);
+                } else {
+                    switch (t) {
+                        case C_PUNCTUATOR:
+                        case C_SINGLE_LINE_COMMENT:
+                            sprintf(command+strlen(command), "\x1b[%dm", COLOR_BRIGHT_BLACK);
+                            break;
+                        case C_LITERAL_DECIMAL:
+                        case C_LITERAL_OCTAL:
+                        case C_LITERAL_BOOL:
+                            sprintf(command+strlen(command), "\x1b[%dm", COLOR_RED);
+                            break;
+                        case C_STRING_CHAR:
+                            sprintf(command+strlen(command), "\x1b[%dm", COLOR_CYAN);
+                            break;
+                        case C_STRING_ESCAPE_SEQUENCE:
+                            sprintf(command+strlen(command), "\x1b[%dm", COLOR_GREEN);
+                            break;
+                        case C_STRING_ENCODING_PREFIX:
+                        case C_STRING_OPENING_QUOTE:
+                        case C_STRING_CLOSING_QUOTE:
+                        case C_TYPE:
+                            sprintf(command+strlen(command), "\x1b[%dm", COLOR_BLUE);
+                            break;
+                        case C_KEYWORD:
+                            sprintf(command+strlen(command), "\x1b[%dm", COLOR_MAGENTA);
+                            break;
+                        default:
+                            sprintf(command+strlen(command), "\x1b[%dm", COLOR_RESET);
+                            break;
+                    }
                 }
                 auto str = std::u32string(s, e);
                 for (auto ch : str) {

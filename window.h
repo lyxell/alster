@@ -1,5 +1,6 @@
 #pragma once
 #include "buffer.h"
+#include <optional>
 
 struct window {
     size_t scroll;
@@ -11,7 +12,7 @@ struct window {
     }
 };
 
-void window_render(const buffer&, window);
+void window_render(const buffer&, window, std::optional<buffer_position>);
 void window_render_cursor(const buffer&, window, bool);
 window window_update_size(window);
 window window_update_scroll(const buffer&, window);

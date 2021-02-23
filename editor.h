@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include "buffer.h"
 #include "window.h"
 
@@ -17,6 +18,7 @@ struct editor {
     std::vector<buffer> future;
     bool exiting;
     bool saving;
+    std::optional<buffer_position> visual_marker;
 };
 
 editor editor_handle_command(editor e);

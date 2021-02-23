@@ -96,6 +96,11 @@ static editor editor_handle_command_normal(editor e) {
         e.exiting = true;
         return e;
     }
+    "v" {
+        e.cmd = {};
+        e.visual_marker = e.buf.pos;
+        return e;
+    }
     "∂" {
         e.cmd = {};
         sprintf(e.status, "deriving...");
@@ -180,7 +185,7 @@ editor editor_handle_command(editor e) {
 window editor_draw(const editor& e, window win) {
     win = window_update_size(win);
     win = window_update_scroll(e.buf, win);
-    window_render(e.buf, win);
+    window_render(e.buf, win, e.visual_marker);
     if (strlen(e.status)) {
         printf("\x1b[%ld;%ldH%s\033[K", win.height, 0ul, e.status);
     }
