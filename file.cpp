@@ -1,9 +1,7 @@
-#include "file.h"
 #include <fstream>
 #include <streambuf>
-#include <locale>
-#include <stdio.h>
-#include <codecvt>
+
+#include "file.h"
 #include "utf8.h"
 
 buffer file_load(const char* filename) {

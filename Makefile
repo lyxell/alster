@@ -18,7 +18,6 @@ build/alster: \
 	build/unicode_re2c.o \
 	build/file.o \
 	file.h \
-	tokenize.h \
 	build/tty.o \
 	build/utf8.o
 	mkdir -p build

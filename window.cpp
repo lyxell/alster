@@ -1,6 +1,5 @@
 #include "colors.h"
 #include "syntax/syntax.h"
-#include "tokenize.h"
 #include "utf8.h"
 #include "window.h"
 #include <cassert>
