@@ -18,6 +18,7 @@ struct editor {
     std::vector<buffer> future;
     bool exiting;
     bool saving;
+    const char* filename;
     std::optional<buffer_position> visual_marker;
 };
 
