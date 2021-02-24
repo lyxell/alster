@@ -120,33 +120,23 @@ buffer buffer_move_next_word(buffer buf) {
     auto& [lines, pos] = buf;
     auto& [x, y] = pos;
     buffer_char ch = buffer_get_char(buf, x, y);
-    if (is_regex_space(ch)) {
-        do {
-            if (buffer_is_at_end_of_line(buf) && buffer_is_at_last_line(buf)) {
-                return buf;
-            } else if (buffer_is_at_end_of_line(buf)) {
-                y++;
-                x = 0;
-            } else {
-                x++;
-            }
-        } while (is_regex_space(buffer_get_char(buf, x, y)));
-    } else {
-        do {
-            if (buffer_is_at_end_of_line(buf) && buffer_is_at_last_line(buf)) {
-                return buf;
-            } else if (buffer_is_at_end_of_line(buf)) {
-                y++;
-                x = 0;
-            } else {
-                x++;
-            }
-        } while (!is_regex_space(buffer_get_char(buf, x, y)) &&
-                 is_regex_word(buffer_get_char(buf, x, y))
-                 == is_regex_word(ch));
-        if (is_regex_space(buffer_get_char(buf, x, y))) {
-            return buffer_move_next_word(buf);
+    auto char_class = [](char32_t c) {
+        if (is_regex_space(c)) return 0;
+        if (is_regex_word(c)) return 1;
+        return 2;
+    };
+    while (char_class(buffer_get_char(buf, x, y)) == char_class(ch)) {
+        if (buffer_is_at_end_of_line(buf) && buffer_is_at_last_line(buf)) {
+            return buf;
+        } else if (buffer_is_at_end_of_line(buf)) {
+            y++;
+            x = 0;
+        } else {
+            x++;
         }
+    }
+    if (is_regex_space(buffer_get_char(buf, x, y))) {
+        return buffer_move_next_word(buf);
     }
     return buf;
 }
