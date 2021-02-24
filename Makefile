@@ -16,23 +16,23 @@ build/alster: \
 	build/syntax/c_string_re2c.o \
 	build/window_re2c.o \
 	build/unicode_re2c.o \
-	file.o \
+	build/file.o \
 	file.h \
 	tokenize.h \
-	tty.o \
-	utf8.o
+	build/tty.o \
+	build/utf8.o
 	mkdir -p build
 	$(CXX) \
 		build/alster.o \
 		build/buffer.o \
-		utf8.o \
+		build/utf8.o \
 		build/editor_re2c.o \
-		tty.o \
+		build/tty.o \
 		build/unicode_re2c.o \
 		build/syntax/c_re2c.o \
 		build/syntax/c_string_re2c.o \
 		build/window_re2c.o \
-		file.o \
+		build/file.o \
 		 -o $@
 
 build/%.o: %.cpp
