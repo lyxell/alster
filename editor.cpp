@@ -182,13 +182,21 @@ editor editor_handle_command(editor e) {
     return e;
 }
 
-window editor_draw(const editor& e, window win) {
+// TODO: editor should not be modified
+window editor_draw(editor& e, window old) {
+    window win;
     win = window_update_size(win);
-    win = window_update_scroll(e.buf, win);
-    window_render(e.buf, win, e.visual_marker);
+    if (e.buf.pos.y < e.scroll) {
+        e.scroll = e.buf.pos.y;
+    } else if (e.buf.pos.y >= e.scroll + win.height) {
+        e.scroll = e.buf.pos.y - win.height + 1;
+    }
+    win = window_update_cursor(win, e.buf, e.scroll);
+    win = window_render_buffer(win, e.buf, e.scroll);
+    printf("%s", window_to_string(win).c_str());
+    /*
     if (strlen(e.status)) {
         printf("\x1b[%ld;%ldH%s\033[K", win.height, 0ul, e.status);
-    }
-    window_render_cursor(e.buf, win, e.mode == MODE_INSERT);
+    }*/
     return win;
 }

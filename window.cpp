@@ -7,6 +7,7 @@
 #include "syntax/syntax.h"
 #include "colors.h"
 
+/*
 window window_update_scroll(const buffer& buf, window w) {
     if (buf.pos.y < w.scroll) {
         w.scroll = buf.pos.y;
@@ -14,7 +15,7 @@ window window_update_scroll(const buffer& buf, window w) {
         w.scroll = buf.pos.y - w.height + 1;
     }
     return w;
-}
+}*/
 
 int token_to_color(int t) {
     switch (t) {
@@ -42,44 +43,51 @@ int token_to_color(int t) {
     return COLOR_RESET;
 }
 
-void window_render(const buffer& buf, window w, std::optional<buffer_position> visual_marker) {
-    static char command[10000];
-    command[0] = '\0';
+window window_render_buffer(window w, const buffer& buf, size_t scroll) {
     for (size_t y = 0; y < w.height; y++) {
-        sprintf(command + strlen(command), "\x1b[%ld;%dH\x1b[K", (y+1), 1);
-        if (y + w.scroll >= buf.lines.size()) continue;
-        auto tokens = tokenize_c(buf.lines[y + w.scroll]->c_str());
+        if (y + scroll >= buf.lines.size()) continue;
         size_t x = 0;
-        for (auto [s, e, t] : tokens) {
-            if (std::pair(y, x) > std::pair(buf.pos.y, buf.pos.x)) {
-                sprintf(command + strlen(command), "\x1b[%dm", COLOR_YELLOW);
-            } else {
-                sprintf(command + strlen(command), "\x1b[%dm",
-                        token_to_color(t));
-            }
-            auto str = std::u32string(s, e);
-            for (auto ch : str) {
+        for (auto [s, e, t] : tokenize_c(buf.lines[y + scroll]->c_str())) {
+            for (auto ch : std::u32string(s, e)) {
                 if (x < w.width) {
-                    std::u32string output;
-                    output += ch;
-                    sprintf(command + strlen(command), "%s", utf8_encode(output).c_str());
+                    w.matrix[y][x].ch = ch;
+                    w.matrix[y][x].color = token_to_color(t);
                 }
                 x++;
             }
-            sprintf(command + strlen(command), "\x1b[%dm", COLOR_RESET);
         }
     }
-    printf("%s", command);
+    return w;
 }
 
-void window_render_cursor(const buffer& buf, window w, bool insert) {
-    if (insert) {
+std::string window_to_string(window w) {
+    std::string str;
+    for (size_t y = 0; y < w.height; y++) {
+        str += "\x1b[" + std::to_string(y + 1) + ";1H\x1b[K";
+        for (size_t x = 0; x < w.width; x++) {
+            if (w.matrix[y][x].ch) {
+                str += "\x1b[" + std::to_string(w.matrix[y][x].color) + "m";
+                str += utf8_encode(std::u32string(1, w.matrix[y][x].ch));
+            }
+        }
+    }
+    /*
+    if (insert_mode) {
         printf("\x1b[6 q");
     } else {
         printf("\x1b[2 q");
-    }
-    printf("\x1b[%ld;%ldH", buf.pos.y - w.scroll + 1,
-            std::min(buf.pos.x, buf.lines[buf.pos.y]->size()) + 1);
+    }*/
+    str += "\x1b[" + std::to_string(w.cursor.y + 1) + ";" +
+                     std::to_string(w.cursor.x + 1) + "H";
+    return str;
+}
+
+window window_update_cursor(window w, const buffer& buf, size_t scroll) {
+    w.cursor.y = buf.pos.y - scroll;
+    w.cursor.x = std::min(
+                   std::min(buf.pos.x, buf.lines[buf.pos.y]->size()),
+                   w.width - 1);
+    return w;
 }
 
 window window_update_size(window w) {
@@ -87,6 +95,10 @@ window window_update_size(window w) {
     assert(ioctl(1, TIOCGWINSZ, &ws) != -1 && ws.ws_col != 0);
     w.width = ws.ws_col;
     w.height = ws.ws_row;
+    w.matrix.resize(w.height);
+    for (size_t i = 0; i < w.height; i++) {
+        w.matrix[i].resize(w.width);
+    }
     return w;
 }
 

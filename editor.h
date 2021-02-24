@@ -18,9 +18,10 @@ struct editor {
     std::vector<buffer> future;
     bool exiting;
     bool saving;
+    size_t scroll;
     const char* filename;
     std::optional<buffer_position> visual_marker;
 };
 
 editor editor_handle_command(editor e);
-window editor_draw(const editor& e, window win);
+window editor_draw(editor& e, window win);
