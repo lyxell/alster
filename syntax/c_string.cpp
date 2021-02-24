@@ -1,5 +1,5 @@
 #include <cassert>
-#include "syntax.h"
+#include "syntax/syntax.h"
 
 /**
  * Expects a null terminated string.

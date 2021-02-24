@@ -7,41 +7,39 @@ CXXFLAGS=-std=c++17 \
 		 -Wfatal-errors \
 		 -Werror
 
-build/alster: alster.cpp buffer.cpp build/syntax/c_re2c.cpp build/syntax/c_string_re2c.cpp tty.cpp build/editor_re2c.cpp \
-			  buffer.h build/window_re2c.cpp file.cpp file.h utf8.cpp
-			 
+build/alster: \
+	build/alster.o \
+	build/buffer.o \
+	buffer.h \
+	build/editor_re2c.o \
+	build/syntax/c_re2c.o \
+	build/syntax/c_string_re2c.o \
+	build/window_re2c.o \
+	file.o \
+	file.h \
+	tokenize.h \
+	tty.o \
+	utf8.o
 	mkdir -p build
 	$(CXX) \
-		$(CXXFLAGS) \
-		-I. \
-		-Isyntax \
-		alster.cpp \
-		buffer.cpp \
-		utf8.cpp \
-		build/editor_re2c.cpp \
-		tty.cpp \
-		build/syntax/c_re2c.cpp \
-		build/syntax/c_string_re2c.cpp \
-		build/window_re2c.cpp \
-		file.cpp \
+		build/alster.o \
+		build/buffer.o \
+		utf8.o \
+		build/editor_re2c.o \
+		tty.o \
+		build/syntax/c_re2c.o \
+		build/syntax/c_string_re2c.o \
+		build/window_re2c.o \
+		file.o \
 		 -o $@
 
-build/test: test/main.cpp build/editor_re2c.cpp utf8.cpp buffer.cpp window.cpp build/syntax/c_re2c.cpp build/syntax/c_string_re2c.cpp
-	$(CXX) $(CXXFLAGS) $^ -I. -Isyntax -o $@
+build/%.o: %.cpp
+	mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) -I. $< -c -o $@
 
-build/fuzzer: build/alster_re2c.cpp buffer.cpp \
-			  buffer.h syntax/c.re2c window.cpp
-	mkdir -p build
-	clang++ \
-		-DFUZZ \
-		-std=c++17 -g -O1 \
-		-I. \
-		build/alster_re2c.cpp \
-		-fsanitize=fuzzer,address \
-		buffer.cpp \
-		window.cpp \
-		file.cpp \
-		 -o $@
+build/%.o: build/%.cpp
+	mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) -I. $< -c -o $@
 
 build/%_re2c.cpp: %.cpp
 	mkdir -p $(@D)

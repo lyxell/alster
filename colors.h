@@ -1,3 +1,5 @@
+#pragma once
+
 enum {
     COLOR_RESET = 0,
 
@@ -29,6 +31,3 @@ enum {
     COLOR_BRIGHT_WHITE,
 };
 
-void set_color(int color) {
-    printf("\x1b[%dm", color);
-}
