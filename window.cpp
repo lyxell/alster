@@ -1,11 +1,11 @@
-#include <sys/ioctl.h>
-#include <cstring>
-#include "utf8.h"
-#include <cassert>
-#include "window.h"
-#include "tokenize.h"
-#include "syntax/syntax.h"
 #include "colors.h"
+#include "syntax/syntax.h"
+#include "tokenize.h"
+#include "utf8.h"
+#include "window.h"
+#include <cassert>
+#include <cstring>
+#include <sys/ioctl.h>
 
 /*
 window window_update_scroll(const buffer& buf, window w) {
