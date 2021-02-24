@@ -125,6 +125,7 @@ buffer buffer_move_next_word(buffer buf) {
         if (is_regex_word(c)) return 1;
         return 2;
     };
+    /* advance until the character class changes */
     while (char_class(buffer_get_char(buf, x, y)) == char_class(ch)) {
         if (buffer_is_at_end_of_line(buf) && buffer_is_at_last_line(buf)) {
             return buf;
@@ -135,6 +136,7 @@ buffer buffer_move_next_word(buffer buf) {
             x++;
         }
     }
+    /* if we ended on a space, recurse to go to next non-space */
     if (is_regex_space(buffer_get_char(buf, x, y))) {
         return buffer_move_next_word(buf);
     }
