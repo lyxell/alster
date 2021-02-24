@@ -9,16 +9,22 @@ struct buffer_position {
     size_t x;
     size_t y;
     bool operator<(const buffer_position& other) const {
-        return std::pair(x, y) < std::pair(other.x, other.y);
+        return std::pair(y, x) < std::pair(other.y, other.x);
     }
     bool operator>(const buffer_position& other) const {
-        return std::pair(x, y) > std::pair(other.x, other.y);
+        return std::pair(y, x) > std::pair(other.y, other.x);
+    }
+    bool operator>=(const buffer_position& other) const {
+        return std::pair(y, x) >= std::pair(other.y, other.x);
+    }
+    bool operator<=(const buffer_position& other) const {
+        return std::pair(y, x) <= std::pair(other.y, other.x);
     }
     bool operator==(const buffer_position& other) const {
-        return std::pair(x, y) == std::pair(other.x, other.y);
+        return std::pair(y, x) == std::pair(other.y, other.x);
     }
     bool operator!=(const buffer_position& other) const {
-        return std::pair(x, y) != std::pair(other.x, other.y);
+        return std::pair(y, x) != std::pair(other.y, other.x);
     }
 };
 

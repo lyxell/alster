@@ -7,21 +7,11 @@
 #include <cstring>
 #include <sys/ioctl.h>
 
-/*
-window window_update_scroll(const buffer& buf, window w) {
-    if (buf.pos.y < w.scroll) {
-        w.scroll = buf.pos.y;
-    } else if (buf.pos.y >= w.scroll + w.height) {
-        w.scroll = buf.pos.y - w.height + 1;
-    }
-    return w;
-}*/
-
 int token_to_color(int t) {
     switch (t) {
         case C_PUNCTUATOR:
         case C_SINGLE_LINE_COMMENT:
-            return COLOR_BRIGHT_BLACK;
+            return COLOR_WHITE;
         case C_LITERAL_DECIMAL:
         case C_LITERAL_OCTAL:
         case C_LITERAL_BOOL:
@@ -51,9 +41,22 @@ window window_render_buffer(window w, const buffer& buf, size_t scroll) {
             for (auto ch : std::u32string(s, e)) {
                 if (x < w.width) {
                     w.matrix[y][x].ch = ch;
-                    w.matrix[y][x].color = token_to_color(t);
+                    w.matrix[y][x].fg = token_to_color(t);
                 }
                 x++;
+            }
+        }
+    }
+    return w;
+}
+
+window window_render_visual_selection(window w, buffer_position start,
+                                    buffer_position end, size_t scroll) {
+    for (size_t y = 0; y < w.height; y++) {
+        for (size_t x = 0; x < w.width; x++) {
+            buffer_position curr {x, y + scroll};
+            if (w.matrix[y][x].ch && curr >= start && curr <= end) {
+                w.matrix[y][x].bg = COLOR_BRIGHT_BLACK_BG;
             }
         }
     }
@@ -66,17 +69,17 @@ std::string window_to_string(window w) {
         str += "\x1b[" + std::to_string(y + 1) + ";1H\x1b[K";
         for (size_t x = 0; x < w.width; x++) {
             if (w.matrix[y][x].ch) {
-                str += "\x1b[" + std::to_string(w.matrix[y][x].color) + "m";
+                if (w.matrix[y][x].bg) {
+                    str += "\x1b[" + std::to_string(w.matrix[y][x].fg) + ";"
+                                   + std::to_string(w.matrix[y][x].bg) + "m";
+                } else {
+                    str += "\x1b[" + std::to_string(w.matrix[y][x].fg) + "m";
+                }
                 str += utf8_encode(std::u32string(1, w.matrix[y][x].ch));
+                str += "\x1b[0m";
             }
         }
     }
-    /*
-    if (insert_mode) {
-        printf("\x1b[6 q");
-    } else {
-        printf("\x1b[2 q");
-    }*/
     str += "\x1b[" + std::to_string(w.cursor.y + 1) + ";" +
                      std::to_string(w.cursor.x + 1) + "H";
     return str;

@@ -5,9 +5,10 @@
 
 struct window_cell {
     char32_t ch;
-    int color;
+    int fg;
+    int bg;
     bool operator==(window_cell rhs) const {
-        return ch == rhs.ch && color == rhs.color;
+        return ch == rhs.ch && fg == rhs.fg && bg == rhs.bg;
     }
 };
 
@@ -27,6 +28,7 @@ struct window {
 
 window window_update_size(window);
 window window_render_buffer(window, const buffer&, size_t scroll);
-window window_render_visual_selection(const buffer&, window);
+window window_render_visual_selection(window w, buffer_position start,
+                                    buffer_position end, size_t scroll);
 window window_update_cursor(window, const buffer& buf, size_t scroll);
 std::string window_to_string(window);

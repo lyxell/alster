@@ -1,17 +1,12 @@
 #include <cassert>
 #include <chrono>
-#include <cstring>
-#include <string>
-#include <iostream>
-#include <fstream>
 
-#include "editor.h"
-#include "utf8.h"
-#include "tty.h"
-#include "window.h"
 #include "buffer.h"
-#include "tokenize.h"
+#include "editor.h"
 #include "file.h"
+#include "tty.h"
+#include "utf8.h"
+#include "window.h"
 
 struct timer {
     std::chrono::time_point<std::chrono::high_resolution_clock> s;
