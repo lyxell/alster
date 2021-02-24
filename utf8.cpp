@@ -1,10 +1,6 @@
 #include "utf8.h"
 #include <string.h>
 
-#define UTF8_ACCEPT 0
-#define UTF8_REJECT 1
-
-
 std::string utf8_encode(const std::u32string& source)
 {
     std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> cvt;
