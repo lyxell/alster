@@ -100,7 +100,11 @@ static editor editor_handle_command_normal(editor e) {
     }
     "v" {
         e.cmd = {};
-        e.visual_marker = e.buf.pos;
+        if (e.visual_marker) {
+            e.visual_marker = {};
+        } else {
+            e.visual_marker = e.buf.pos;
+        }
         return e;
     }
     "w" {
