@@ -52,3 +52,19 @@ int main() {}
 
 Works in vscode, but you need Ctrl+Z instead
 of backspace
+
+## Highlight whatever was yanked
+
+```
+
+hello world how are you doing?
+            ↑ cursor here
+```
+
+press yw:
+
+```
+hello world how are you doing?
+            ----
+             highlighted
+```
