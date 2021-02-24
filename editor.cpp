@@ -1,8 +1,10 @@
+#include <cstring>
+#include <cassert>
+
 #include "editor.h"
 #include "window.h"
 #include "utf8.h"
-#include <cstring>
-#include <cassert>
+#include "unicode.h"
 
 // pure function
 static editor editor_handle_command_normal(editor e) {
@@ -99,6 +101,11 @@ static editor editor_handle_command_normal(editor e) {
     "v" {
         e.cmd = {};
         e.visual_marker = e.buf.pos;
+        return e;
+    }
+    "w" {
+        e.cmd = {};
+        e.buf = buffer_move_next_word(std::move(e.buf));
         return e;
     }
     "∂" {
@@ -210,9 +217,8 @@ window editor_draw(editor& e, window old) {
         printf("\x1b[2 q");
     }
     printf("%s", window_to_string(win).c_str());
-    /*
     if (strlen(e.status)) {
-        printf("\x1b[%ld;%ldH%s\033[K", win.height, 0ul, e.status);
-    }*/
+        printf("\x1b[%ld;%ldH%s\033[K", win.height, 0ul, (is_regex_word(e.buf.lines[e.buf.pos.y]->at(e.buf.pos.x)) ? "yes" : "no"));
+    }
     return win;
 }

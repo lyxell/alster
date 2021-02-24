@@ -15,6 +15,7 @@ build/alster: \
 	build/syntax/c_re2c.o \
 	build/syntax/c_string_re2c.o \
 	build/window_re2c.o \
+	build/unicode_re2c.o \
 	file.o \
 	file.h \
 	tokenize.h \
@@ -27,6 +28,7 @@ build/alster: \
 		utf8.o \
 		build/editor_re2c.o \
 		tty.o \
+		build/unicode_re2c.o \
 		build/syntax/c_re2c.o \
 		build/syntax/c_string_re2c.o \
 		build/window_re2c.o \

@@ -1,5 +1,6 @@
 #include <algorithm>
 #include "buffer.h"
+#include "unicode.h"
 
 /**
  * All of these are pure functions modulo memory allocations.
@@ -98,6 +99,56 @@ buffer buffer_move_up(buffer buf, size_t n) {
         std::move(buf.lines),
         {buf.pos.x, n > buf.pos.y ? 0 : buf.pos.y - n}
     };
+}
+
+bool buffer_is_at_end_of_line(const buffer& buf) {
+    return buf.pos.x == buf.lines[buf.pos.y]->size();
+}
+
+bool buffer_is_at_last_line(const buffer& buf) {
+    return buf.pos.y == buf.lines.size() - 1;
+}
+
+buffer_char buffer_get_char(const buffer& buf, size_t x, size_t y) {
+    if (buffer_is_at_end_of_line(buf)) return '\n';
+    auto& [lines, pos] = buf;
+    auto& line = *lines[pos.y];
+    return line[x];
+}
+
+buffer buffer_move_next_word(buffer buf) {
+    auto& [lines, pos] = buf;
+    auto& [x, y] = pos;
+    buffer_char ch = buffer_get_char(buf, x, y);
+    if (is_regex_space(ch)) {
+        do {
+            if (buffer_is_at_end_of_line(buf) && buffer_is_at_last_line(buf)) {
+                return buf;
+            } else if (buffer_is_at_end_of_line(buf)) {
+                y++;
+                x = 0;
+            } else {
+                x++;
+            }
+        } while (is_regex_space(buffer_get_char(buf, x, y)));
+    } else {
+        do {
+            if (buffer_is_at_end_of_line(buf) && buffer_is_at_last_line(buf)) {
+                return buf;
+            } else if (buffer_is_at_end_of_line(buf)) {
+                y++;
+                x = 0;
+            } else {
+                x++;
+            }
+        } while (!is_regex_space(buffer_get_char(buf, x, y)) &&
+                 is_regex_word(buffer_get_char(buf, x, y))
+                 == is_regex_word(ch));
+        if (is_regex_space(buffer_get_char(buf, x, y))) {
+            return buffer_move_next_word(buf);
+        }
+    }
+    return buf;
 }
 
 buffer buffer_erase_current_line(buffer buf) {

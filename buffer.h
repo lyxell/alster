@@ -50,3 +50,4 @@ buffer buffer_move_start_of_line(buffer);
 buffer buffer_move_end_of_line(buffer);
 buffer buffer_erase_current_line(buffer);
 buffer buffer_indent(buffer);
+buffer buffer_move_next_word(buffer);
