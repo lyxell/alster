@@ -32,7 +32,7 @@ build/alster: \
 		build/syntax/c_string_re2c.o \
 		build/window_re2c.o \
 		build/file.o \
-		 -o $@
+		 -o $@ -llua5.1
 
 build/%.o: %.cpp
 	mkdir -p $(@D)

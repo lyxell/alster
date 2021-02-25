@@ -10,11 +10,16 @@
 static editor editor_handle_command_normal(editor e) {
     const char32_t *YYCURSOR = e.cmd.c_str();
     const char32_t *YYMARKER;
+    if (e.bindings.find(e.cmd) != e.bindings.end()) {
+        e.lua_function = e.cmd;
+        e.cmd = {};
+        return e;
+    }
     /*!re2c
     re2c:yyfill:enable = 0;
     re2c:flags:unicode = 1;
     re2c:define:YYCTYPE = char32_t;
-    ([1-9][0-9]*)?[hjkl] {
+    ([1-9][0-9]*)?[jk] {
         e.cmd = {};
         switch (yych) {
         case 'h': e.buf = buffer_move_left(std::move(e.buf),  1); break;

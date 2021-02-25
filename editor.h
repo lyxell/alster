@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <set>
 #include "buffer.h"
 #include "window.h"
 
@@ -21,6 +22,8 @@ struct editor {
     size_t scroll;
     const char* filename;
     std::optional<buffer_position> visual_marker;
+    std::set<std::u32string> bindings;
+    std::optional<std::u32string> lua_function;
 };
 
 editor editor_handle_command(editor e);
