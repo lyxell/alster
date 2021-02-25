@@ -4,19 +4,14 @@
 
 static struct termios orig_termios;
 
-void tty_disable_raw_mode(int fd) {
-    tcsetattr(fd,TCSAFLUSH,&orig_termios);
-}
-
-void tty_editor_at_exit(void) {
-    tty_disable_raw_mode(STDIN_FILENO);
+void tty_disable_raw_mode() {
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
 }
 
 int tty_enable_raw_mode() {
     struct termios raw;
     if (!isatty(STDIN_FILENO)) return -1;
-    atexit(tty_editor_at_exit);
-    if (tcgetattr(STDIN_FILENO,&orig_termios) == -1) return -1;
+    if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) return -1;
     raw = orig_termios;
     raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
     raw.c_oflag &= ~(OPOST);

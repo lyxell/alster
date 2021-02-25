@@ -52,6 +52,7 @@ int main(int argc, char* argv[]) {
         t.start();
         if (e.exiting) break;
     }
+    tty_disable_raw_mode();
     return 0;
 }
 
