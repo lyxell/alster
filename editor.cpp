@@ -14,7 +14,7 @@ static editor editor_handle_command_normal(editor e) {
     re2c:yyfill:enable = 0;
     re2c:flags:unicode = 1;
     re2c:define:YYCTYPE = char32_t;
-    ([1-9][0-9]*)? ("h" | "j" | "k" | "l") {
+    ([1-9][0-9]*)?[hjkl] {
         e.cmd = {};
         switch (yych) {
         case 'h': e.buf = buffer_move_left(std::move(e.buf),  1); break;
@@ -24,7 +24,7 @@ static editor editor_handle_command_normal(editor e) {
         }
         return e;
     }
-    ([1-9][0-9]*)? ("u" | "r") {
+    ([1-9][0-9]*)?[ur] {
         e.cmd = {};
         auto& pop_from = yych == 'u' ? e.history : e.future;
         auto& push_to = yych == 'u' ? e.future : e.history;
@@ -37,7 +37,7 @@ static editor editor_handle_command_normal(editor e) {
         }
         return e;
     }
-    "o" | "O" {
+    [oO] {
         e.cmd = {};
         e.history.push_back(e.buf);
         e.future.clear();
@@ -49,12 +49,12 @@ static editor editor_handle_command_normal(editor e) {
         e.mode = MODE_INSERT;
         return e;
     }
-    "$" {
+    [$] {
         e.cmd = {};
         e.buf = buffer_move_end_of_line(std::move(e.buf));
         return e;
     }
-    "I" | "A" {
+    [IA] {
         e.cmd = {};
         e.mode = MODE_INSERT;
         if (!e.history.size() || e.history.back().lines != e.buf.lines) {
@@ -67,24 +67,24 @@ static editor editor_handle_command_normal(editor e) {
         }
         return e;
     }
-    "G" {
+    [G] {
         e.cmd = {};
         e.buf = buffer_move_end(std::move(e.buf));
         return e;
     }
-    "dd" {
+    [d][d] {
         e.cmd = {};
         e.history.push_back(e.buf);
         e.future.clear();
         e.buf = buffer_erase_current_line(std::move(e.buf));
         return e;
     }
-    "gg" {
+    [g][g] {
         e.cmd = {};
         e.buf = buffer_move_start(std::move(e.buf));
         return e;
     }
-    "i" {
+    [i] {
         e.cmd = {};
         e.mode = MODE_INSERT;
         if (!e.history.size() || e.history.back().lines != e.buf.lines) {
@@ -92,17 +92,17 @@ static editor editor_handle_command_normal(editor e) {
         }
         return e;
     }
-    "0" | "^" {
+    [0^] {
         e.cmd = {};
         e.buf = buffer_move_start_of_line(std::move(e.buf));
         return e;
     }
-    "q" {
+    [q] {
         e.cmd = {};
         e.exiting = true;
         return e;
     }
-    "v" {
+    [v] {
         e.cmd = {};
         if (e.visual_marker) {
             e.visual_marker = {};
@@ -111,22 +111,22 @@ static editor editor_handle_command_normal(editor e) {
         }
         return e;
     }
-    "w" {
+    [w] {
         e.cmd = {};
         e.buf = buffer_move_next_word(std::move(e.buf));
         return e;
     }
-    "∂" {
+    [∂] {
         e.cmd = {};
         sprintf(e.status, "deriving...");
         return e;
     }
-    "s" {
+    [s] {
         e.cmd = {};
         e.saving = true;
         return e;
     }
-    "\x1b" {
+    [\x1b] {
         e.cmd = {};
         e.visual_marker = {};
         return e;
