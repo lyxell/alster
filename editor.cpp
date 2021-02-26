@@ -34,25 +34,11 @@ static editor editor_handle_command_normal(editor e) {
     }
     [o] {
         e.cmd = {};
-        e.history.push_back(e.buf);
-        e.future.clear();
-        e.buf = buffer_move_end_of_line(std::move(e.buf));
-        e.buf = buffer_break_line(std::move(e.buf));
-        e.mode = MODE_INSERT;
-        return e;
-    }
-    [$] {
-        e.cmd = {};
-        e.buf = buffer_move_end_of_line(std::move(e.buf));
-        return e;
-    }
-    [A] {
-        e.cmd = {};
-        e.mode = MODE_INSERT;
-        if (!e.history.size() || e.history.back().lines != e.buf.lines) {
-            e.history.push_back(e.buf);
-        }
-        e.buf = buffer_move_end_of_line(std::move(e.buf));
+//        e.history.push_back(e.buf);
+//        e.future.clear();
+//        e.buf = buffer_move_end_of_line(std::move(e.buf));
+//        e.buf = buffer_break_line(std::move(e.buf));
+//        e.mode = MODE_INSERT;
         return e;
     }
     [d][d] {

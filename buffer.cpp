@@ -41,21 +41,6 @@ static buffer_char opposite_bracket(buffer_char c) {
     return '\0';
 }
 
-buffer buffer_move_end_of_line(buffer buf) {
-    auto x = buf.lines[buf.pos.y]->size();
-    return {
-        std::move(buf.lines),
-        {x, buf.pos.y}
-    };
-}
-
-buffer buffer_move_right(buffer buf, size_t n) {
-    return {
-        std::move(buf.lines),
-        {buf.pos.x + n, buf.pos.y}
-    };
-}
-
 bool buffer_is_at_end_of_line(const buffer& buf) {
     return buf.pos.x == buf.lines[buf.pos.y]->size();
 }

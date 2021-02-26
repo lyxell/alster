@@ -87,19 +87,27 @@ int main(int argc, char* argv[]) {
         t.start();
         e = editor_handle_command(std::move(e));
         if (e.lua_function) {
+            // write lines
+            lua_getglobal(lua_state, "lines");
+            for (size_t i = 1; i <= e.buf.lines.size(); i++) {
+                lua_pushinteger(lua_state, i);
+                lua_pushinteger(lua_state, e.buf.lines[i-1]->size());
+                lua_settable(lua_state, -3);
+            }
+            lua_pop(lua_state, 1);
             // write buffer
             lua_getglobal(lua_state, "buffer");
+            // push x
             lua_pushstring(lua_state, "x");
             lua_pushinteger(lua_state, e.buf.pos.x);
             lua_settable(lua_state, -3);
+            // push mode
             lua_pushstring(lua_state, "mode");
             lua_pushinteger(lua_state, e.mode);
             lua_settable(lua_state, -3);
+            // push y
             lua_pushstring(lua_state, "y");
             lua_pushinteger(lua_state, e.buf.pos.y);
-            lua_settable(lua_state, -3);
-            lua_pushstring(lua_state, "num_lines");
-            lua_pushinteger(lua_state, e.buf.lines.size());
             lua_settable(lua_state, -3);
             lua_pop(lua_state, 1); // pop buffer
             // done with buffer
