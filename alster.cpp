@@ -31,6 +31,26 @@ struct timer {
     }
 };
 
+static int lines_len(lua_State *L) {
+    // TODO: Why is this value 2? Shouldn't it be 1?
+    assert(lua_gettop(L) == 2); /* number of arguments */
+    assert(lua_isuserdata(L, -2));
+    buffer_lines** lines = (buffer_lines**) lua_touserdata(L, -2);
+    lua_pushnumber(L, (int) (*lines)->size());
+    return 1;
+}
+
+static int lines_index(lua_State *L) {
+    assert(lua_gettop(L) == 2); /* number of arguments */
+    assert(lua_isnumber(L, -1));
+    assert(lua_isuserdata(L, -2));
+    long int idx = lua_tointeger(L, -1) - 1; // subtract 1, lua is 1-indexed
+    buffer_lines** lines = (buffer_lines**) lua_touserdata(L, -2);
+    auto& line = (*lines)->at(idx);
+    lua_pushnumber(L, (int) line->size());
+    return 1; /* number of results */
+}
+
 template <typename T>
 std::set<std::u32string> get_bindings(T lua_state) {
     std::set<std::u32string> bindings;
@@ -78,6 +98,18 @@ int main(int argc, char* argv[]) {
         e.filename = "/tmp/alster.tmp";
     }
     assert(tty_enable_raw_mode() == 0);
+    
+    buffer_lines** mem = (buffer_lines**) lua_newuserdata(lua_state, sizeof(buffer_lines*));
+    *mem = &(e.buf.lines);
+    lua_newtable(lua_state);
+    lua_pushstring(lua_state, "__index");
+    lua_pushcfunction(lua_state, lines_index);
+    lua_settable(lua_state, -3);
+    lua_pushstring(lua_state, "__len");
+    lua_pushcfunction(lua_state, lines_len);
+    lua_settable(lua_state, -3);
+    lua_setmetatable(lua_state, -2);
+    lua_setglobal(lua_state, "lines");
 
     while (true) {
         win = editor_draw(e, win);
@@ -87,14 +119,6 @@ int main(int argc, char* argv[]) {
         t.start();
         e = editor_handle_command(std::move(e));
         if (e.lua_function) {
-            // write lines
-            lua_getglobal(lua_state, "lines");
-            for (size_t i = 1; i <= e.buf.lines.size(); i++) {
-                lua_pushinteger(lua_state, i);
-                lua_pushinteger(lua_state, e.buf.lines[i-1]->size());
-                lua_settable(lua_state, -3);
-            }
-            lua_pop(lua_state, 1);
             // write buffer
             lua_getglobal(lua_state, "buffer");
             // push x

@@ -4,8 +4,7 @@ CXXFLAGS=-std=c++17 \
 		 -Wall \
 		 -Wshadow \
 		 -Wconversion \
-		 -Wfatal-errors \
-		 -Werror
+		 -Wfatal-errors
 
 build/alster: \
 	build/alster.o \

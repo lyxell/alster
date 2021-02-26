@@ -18,4 +18,18 @@ end)
 
 ## buffer
 
-### buffer.move_left(steps)
+### buffer.x
+
+### buffer.y
+
+### \#buffer.lines
+
+Number of lines
+
+### \#line
+
+Line length
+
+### line[idx]
+
+Return string (char?) at position idx
