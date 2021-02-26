@@ -41,28 +41,6 @@ static buffer_char opposite_bracket(buffer_char c) {
     return '\0';
 }
 
-buffer buffer_move_start(buffer buf) {
-    return { 
-        std::move(buf.lines),
-        {0, 0}
-    };
-}
-
-buffer buffer_move_end(buffer buf) {
-    auto y = buf.lines.size() - 1;
-    return {
-        std::move(buf.lines),
-        {buf.pos.x, y}
-    };
-}
-
-buffer buffer_move_start_of_line(buffer buf) {
-    return {
-        std::move(buf.lines),
-        {0, buf.pos.y}
-    };
-}
-
 buffer buffer_move_end_of_line(buffer buf) {
     auto x = buf.lines[buf.pos.y]->size();
     return {
@@ -71,33 +49,10 @@ buffer buffer_move_end_of_line(buffer buf) {
     };
 }
 
-buffer buffer_move_left(buffer buf, size_t n) {
-    auto x = std::min(buf.lines[buf.pos.y]->size(), buf.pos.x);
-    return {
-        std::move(buf.lines),
-        {n > x ? 0 : x - n, buf.pos.y}
-    };
-}
-
 buffer buffer_move_right(buffer buf, size_t n) {
     return {
         std::move(buf.lines),
         {buf.pos.x + n, buf.pos.y}
-    };
-}
-
-buffer buffer_move_down(buffer buf, size_t n) {
-    auto y = std::min(buf.pos.y + n, buf.lines.size() - 1);
-    return {
-        std::move(buf.lines),
-        {buf.pos.x, y}
-    };
-}
-
-buffer buffer_move_up(buffer buf, size_t n) {
-    return {
-        std::move(buf.lines),
-        {buf.pos.x, n > buf.pos.y ? 0 : buf.pos.y - n}
     };
 }
 

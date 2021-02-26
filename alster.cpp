@@ -92,8 +92,14 @@ int main(int argc, char* argv[]) {
             lua_pushstring(lua_state, "x");
             lua_pushinteger(lua_state, e.buf.pos.x);
             lua_settable(lua_state, -3);
+            lua_pushstring(lua_state, "mode");
+            lua_pushinteger(lua_state, e.mode);
+            lua_settable(lua_state, -3);
             lua_pushstring(lua_state, "y");
             lua_pushinteger(lua_state, e.buf.pos.y);
+            lua_settable(lua_state, -3);
+            lua_pushstring(lua_state, "num_lines");
+            lua_pushinteger(lua_state, e.buf.lines.size());
             lua_settable(lua_state, -3);
             lua_pop(lua_state, 1); // pop buffer
             // done with buffer
@@ -106,6 +112,9 @@ int main(int argc, char* argv[]) {
             lua_pop(lua_state, 1); // pop config
             // read buffer
             lua_getglobal(lua_state, "buffer");
+            lua_getfield(lua_state, -1, "mode");
+            e.mode = (int) lua_tointeger(lua_state, -1);
+            lua_pop(lua_state, 1);
             lua_getfield(lua_state, -1, "x");
             e.buf.pos.x = lua_tointeger(lua_state, -1);
             lua_pop(lua_state, 1);
