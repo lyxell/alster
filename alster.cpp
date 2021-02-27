@@ -113,6 +113,9 @@ int main(int argc, char* argv[]) {
     lua_pushstring(L, "insert");
     lua_pushcfunction(L, lua_lines_insert);
     lua_settable(L, -3);
+    lua_pushstring(L, "remove");
+    lua_pushcfunction(L, lua_lines_remove);
+    lua_settable(L, -3);
     lua_setglobal(L, "lines");
 
     while (true) {

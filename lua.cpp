@@ -35,7 +35,6 @@ int lua_line_create(lua_State *L) {
 }
 
 int lua_lines_insert(lua_State *L) {
-    // TODO: Why is this value 2? Shouldn't it be 1?
     assert(lua_gettop(L) == 3); /* number of arguments */
     assert(lua_isuserdata(L, -1)); // value
     assert(lua_isnumber(L, -2)); // pos
@@ -45,6 +44,16 @@ int lua_lines_insert(lua_State *L) {
     buffer_lines& lines = **((buffer_lines**) lua_touserdata(L, -3));
     lines.insert(lines.begin() + pos, std::make_shared<buffer_line>(
         buffer_line(line + 1, line[0])));
+    return 0; /* number of results */
+}
+
+int lua_lines_remove(lua_State *L) {
+    assert(lua_gettop(L) == 2); /* number of arguments */
+    assert(lua_isnumber(L, -1)); // pos
+    assert(lua_isuserdata(L, -2)); // lines
+    long int pos = lua_tointeger(L, -1) - 1;
+    buffer_lines& lines = **((buffer_lines**) lua_touserdata(L, -2));
+    lines.erase(lines.begin() + pos);
     return 0; /* number of results */
 }
 

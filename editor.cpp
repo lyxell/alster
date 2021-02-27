@@ -14,9 +14,9 @@ static editor editor_handle_command_normal(editor e) {
         e.cmd = {};
         return e;
     }
+    // check if e.cmd is a prefix of some command
     if (e.bindings.upper_bound(e.cmd) != e.bindings.end()) {
         auto next = *e.bindings.upper_bound(e.cmd);
-        // check if e.cmd is a prefix of next
         if (next.find(e.cmd) == 0) {
             return e;
         }
@@ -40,9 +40,6 @@ static editor editor_handle_command_insert(editor e) {
     "\x1b" {
         e.cmd = {};
         e.mode = MODE_NORMAL;
-//        if (e.buf.lines == e.history.back().lines) {
-//            e.history.pop_back();
-//        }
         return e;
     }
     "\r" {

@@ -17,16 +17,16 @@ config = {
     end
 }
 
-config.bind("h",  function()
+config.bind("h", function()
     buffer.x = math.max(buffer.x - 1, 1)
 end)
-config.bind("j",  function()
-    buffer.y = math.min(buffer.y + 1, #buffer.lines - 1)
+config.bind("j", function()
+    buffer.y = math.min(buffer.y + 1, #buffer.lines)
 end)
-config.bind("d$",  function()
+config.bind("d$", function()
     buffer.lines[buffer.y] = line.sub(buffer.lines[buffer.y], 1, buffer.x - 1)
 end)
-config.bind("k",  function()
+config.bind("k", function()
     buffer.y = math.max(buffer.y - 1, 1)
 end)
 config.bind("l", function()
@@ -36,44 +36,47 @@ config.bind("gg", function()
     buffer.x = 1
     buffer.y = 1
 end)
-config.bind("0",  function()
+config.bind("0", function()
     buffer.x = 1
 end)
-config.bind("G",  function()
-    buffer.y = #buffer.lines - 1
+config.bind("G", function()
+    buffer.y = #buffer.lines
 end)
-config.bind("$",  function()
+config.bind("$", function()
     buffer.x = #(buffer.lines[buffer.y]) + 1
 end)
-config.bind("A",  function()
+config.bind("A", function()
     buffer.mode = MODE_INSERT
     buffer.x = #(buffer.lines[buffer.y]) + 1
 end)
-config.bind("i",  function()
+config.bind("i", function()
     buffer.mode = MODE_INSERT
 end)
-config.bind("I",  function()
+config.bind("I", function()
     buffer.mode = MODE_INSERT
     buffer.x = 1
 end)
-config.bind("\r",  function()
+config.bind("\r", function()
     local curr_line = buffer.lines[buffer.y]
     lines.insert(buffer.lines, buffer.y + 1, line.sub(curr_line, buffer.x, #curr_line))
     buffer.lines[buffer.y] = line.sub(curr_line, 1, buffer.x - 1)
     buffer.y = buffer.y + 1
     buffer.x = 1
 end)
-config.bind("o",  function()
+config.bind("o", function()
     lines.insert(buffer.lines, buffer.y + 1, line.create())
     buffer.x = 1
     buffer.y = buffer.y + 1
     buffer.mode = MODE_INSERT
 end)
-config.bind("O",  function()
+config.bind("O", function()
     lines.insert(buffer.lines, buffer.y, line.create())
     buffer.x = 1
     buffer.mode = MODE_INSERT
 end)
 config.bind("q", function()
     buffer.exiting = true
+end)
+config.bind("dd", function()
+    lines.remove(buffer.lines, buffer.y)
 end)
