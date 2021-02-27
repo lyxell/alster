@@ -14,30 +14,14 @@ static editor editor_handle_command_normal(editor e) {
         e.cmd = {};
         return e;
     }
-    /*!re2c
-    re2c:yyfill:enable = 0;
-    re2c:flags:unicode = 1;
-    re2c:define:YYCTYPE = char32_t;
-    [q] {
-        e.cmd = {};
-        e.exiting = true;
-        return e;
+    if (e.bindings.upper_bound(e.cmd) != e.bindings.end()) {
+        auto next = *e.bindings.upper_bound(e.cmd);
+        // check if e.cmd is a prefix of next
+        if (next.find(e.cmd) == 0) {
+            return e;
+        }
     }
-    * {
-        // if yych == '\0' we have read until end, i.e.
-        // the command must be a prefix of some command
-        //if (yych == '\0') {
-        //    sprintf(e.status, "%s", utf8_encode(e.cmd.c_str()).c_str());
-        //} else {
-        //    sprintf(e.status, "Unknown command %s",
-        //            utf8_encode(e.cmd.c_str()).c_str());
-        //    e.cmd = {};
-        //}
-        if (e.cmd.size() > 2) e.cmd = {};
-        return e;
-    }
-    */
-    assert(false);
+    e.cmd = {};
     return e;
 }
 

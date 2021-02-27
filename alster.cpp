@@ -157,6 +157,9 @@ int main(int argc, char* argv[]) {
             lua_getfield(L, -1, "y");
             e.buf.pos.y = lua_tointeger(L, -1) - 1;
             lua_pop(L, 1);
+            lua_getfield(L, -1, "exiting");
+            e.exiting = lua_toboolean(L, -1);
+            lua_pop(L, 1);
             lua_pop(L, 1); // pop buffer
             e.lua_function = {};
         }

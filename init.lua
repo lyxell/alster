@@ -74,3 +74,6 @@ config.bind("O",  function()
     buffer.x = 1
     buffer.mode = MODE_INSERT
 end)
+config.bind("q", function()
+    buffer.exiting = true
+end)
