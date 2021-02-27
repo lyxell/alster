@@ -7,6 +7,7 @@
 #include <lua5.1/lauxlib.h>
 #include <lua5.1/lualib.h>
 
+#include "lua.h"
 #include "buffer.h"
 #include "editor.h"
 #include "file.h"
@@ -30,26 +31,6 @@ struct timer {
         */
     }
 };
-
-static int lines_len(lua_State *L) {
-    // TODO: Why is this value 2? Shouldn't it be 1?
-    assert(lua_gettop(L) == 2); /* number of arguments */
-    assert(lua_isuserdata(L, -2));
-    buffer_lines** lines = (buffer_lines**) lua_touserdata(L, -2);
-    lua_pushnumber(L, (int) (*lines)->size());
-    return 1;
-}
-
-static int lines_index(lua_State *L) {
-    assert(lua_gettop(L) == 2); /* number of arguments */
-    assert(lua_isnumber(L, -1));
-    assert(lua_isuserdata(L, -2));
-    long int idx = lua_tointeger(L, -1) - 1; // subtract 1, lua is 1-indexed
-    buffer_lines** lines = (buffer_lines**) lua_touserdata(L, -2);
-    auto& line = (*lines)->at(idx);
-    lua_pushnumber(L, (int) line->size());
-    return 1; /* number of results */
-}
 
 template <typename T>
 std::set<std::u32string> get_bindings(T lua_state) {
@@ -84,10 +65,10 @@ int main(int argc, char* argv[]) {
     window win {};
 
     // <-- load functions
-    auto lua_state = luaL_newstate();
-    luaL_openlibs(lua_state);
-    assert(luaL_dofile(lua_state, "init.lua") == 0);
-    e.bindings = get_bindings(lua_state);
+    auto L = luaL_newstate();
+    luaL_openlibs(L);
+    assert(luaL_dofile(L, "init.lua") == 0);
+    e.bindings = get_bindings(L);
     // end load functions -->
 
     if (argc > 1) {
@@ -99,17 +80,27 @@ int main(int argc, char* argv[]) {
     }
     assert(tty_enable_raw_mode() == 0);
     
-    buffer_lines** mem = (buffer_lines**) lua_newuserdata(lua_state, sizeof(buffer_lines*));
+    buffer_lines** mem = (buffer_lines**) lua_newuserdata(L, sizeof(buffer_lines*));
     *mem = &(e.buf.lines);
-    lua_newtable(lua_state);
-    lua_pushstring(lua_state, "__index");
-    lua_pushcfunction(lua_state, lines_index);
-    lua_settable(lua_state, -3);
-    lua_pushstring(lua_state, "__len");
-    lua_pushcfunction(lua_state, lines_len);
-    lua_settable(lua_state, -3);
-    lua_setmetatable(lua_state, -2);
-    lua_setglobal(lua_state, "lines");
+    lua_newtable(L);
+    lua_pushstring(L, "__index");
+    lua_pushcfunction(L, lua_lines_index);
+    lua_settable(L, -3);
+    lua_pushstring(L, "__newindex");
+    lua_pushcfunction(L, lua_lines_newindex);
+    lua_settable(L, -3);
+    lua_pushstring(L, "__len");
+    lua_pushcfunction(L, lua_lines_len);
+    lua_settable(L, -3);
+    lua_setmetatable(L, -2);
+    lua_setglobal(L, "lines");
+
+    // create line api
+    lua_newtable(L);
+    lua_pushstring(L, "sub");
+    lua_pushcfunction(L, lua_line_sub);
+    lua_settable(L, -3);
+    lua_setglobal(L, "line");
 
     while (true) {
         win = editor_draw(e, win);
@@ -120,40 +111,40 @@ int main(int argc, char* argv[]) {
         e = editor_handle_command(std::move(e));
         if (e.lua_function) {
             // write buffer
-            lua_getglobal(lua_state, "buffer");
+            lua_getglobal(L, "buffer");
             // push x
-            lua_pushstring(lua_state, "x");
-            lua_pushinteger(lua_state, e.buf.pos.x);
-            lua_settable(lua_state, -3);
+            lua_pushstring(L, "x");
+            lua_pushinteger(L, e.buf.pos.x + 1);
+            lua_settable(L, -3);
             // push mode
-            lua_pushstring(lua_state, "mode");
-            lua_pushinteger(lua_state, e.mode);
-            lua_settable(lua_state, -3);
+            lua_pushstring(L, "mode");
+            lua_pushinteger(L, e.mode);
+            lua_settable(L, -3);
             // push y
-            lua_pushstring(lua_state, "y");
-            lua_pushinteger(lua_state, e.buf.pos.y);
-            lua_settable(lua_state, -3);
-            lua_pop(lua_state, 1); // pop buffer
+            lua_pushstring(L, "y");
+            lua_pushinteger(L, e.buf.pos.y + 1);
+            lua_settable(L, -3);
+            lua_pop(L, 1); // pop buffer
             // done with buffer
-            lua_getglobal(lua_state, "config");
-            lua_getfield(lua_state, -1, "bindings");
-            lua_getfield(lua_state, -1, utf8_encode(*e.lua_function).c_str());
-            assert(lua_isfunction(lua_state, -1));
-            lua_call(lua_state, 0, 0);
-            lua_pop(lua_state, 1); // pop bindings
-            lua_pop(lua_state, 1); // pop config
+            lua_getglobal(L, "config");
+            lua_getfield(L, -1, "bindings");
+            lua_getfield(L, -1, utf8_encode(*e.lua_function).c_str());
+            assert(lua_isfunction(L, -1));
+            lua_call(L, 0, 0);
+            lua_pop(L, 1); // pop bindings
+            lua_pop(L, 1); // pop config
             // read buffer
-            lua_getglobal(lua_state, "buffer");
-            lua_getfield(lua_state, -1, "mode");
-            e.mode = (int) lua_tointeger(lua_state, -1);
-            lua_pop(lua_state, 1);
-            lua_getfield(lua_state, -1, "x");
-            e.buf.pos.x = lua_tointeger(lua_state, -1);
-            lua_pop(lua_state, 1);
-            lua_getfield(lua_state, -1, "y");
-            e.buf.pos.y = lua_tointeger(lua_state, -1);
-            lua_pop(lua_state, 1);
-            lua_pop(lua_state, 1); // pop buffer
+            lua_getglobal(L, "buffer");
+            lua_getfield(L, -1, "mode");
+            e.mode = (int) lua_tointeger(L, -1);
+            lua_pop(L, 1);
+            lua_getfield(L, -1, "x");
+            e.buf.pos.x = lua_tointeger(L, -1) - 1;
+            lua_pop(L, 1);
+            lua_getfield(L, -1, "y");
+            e.buf.pos.y = lua_tointeger(L, -1) - 1;
+            lua_pop(L, 1);
+            lua_pop(L, 1); // pop buffer
             e.lua_function = {};
         }
         if (e.saving) {
