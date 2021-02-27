@@ -9,7 +9,6 @@
 // pure function
 static editor editor_handle_command_normal(editor e) {
     const char32_t *YYCURSOR = e.cmd.c_str();
-    const char32_t *YYMARKER;
     if (e.bindings.find(e.cmd) != e.bindings.end()) {
         e.lua_function = e.cmd;
         e.cmd = {};
@@ -19,67 +18,9 @@ static editor editor_handle_command_normal(editor e) {
     re2c:yyfill:enable = 0;
     re2c:flags:unicode = 1;
     re2c:define:YYCTYPE = char32_t;
-    ([1-9][0-9]*)?[ur] {
-        e.cmd = {};
-        auto& pop_from = yych == 'u' ? e.history : e.future;
-        auto& push_to = yych == 'u' ? e.future : e.history;
-        if (pop_from.empty()) {
-            sprintf(e.status, "%s empty!", yych == 'u' ? "History" : "Future");
-        } else {
-            push_to.push_back(std::move(e.buf));
-            e.buf = std::move(pop_from.back());
-            pop_from.pop_back();
-        }
-        return e;
-    }
-    [o] {
-        e.cmd = {};
-//        e.history.push_back(e.buf);
-//        e.future.clear();
-//        e.buf = buffer_move_end_of_line(std::move(e.buf));
-//        e.buf = buffer_break_line(std::move(e.buf));
-//        e.mode = MODE_INSERT;
-        return e;
-    }
-    [d][d] {
-        e.cmd = {};
-        e.history.push_back(e.buf);
-        e.future.clear();
-        e.buf = buffer_erase_current_line(std::move(e.buf));
-        return e;
-    }
     [q] {
         e.cmd = {};
         e.exiting = true;
-        return e;
-    }
-    [v] {
-        e.cmd = {};
-        if (e.visual_marker) {
-            e.visual_marker = {};
-        } else {
-            e.visual_marker = e.buf.pos;
-        }
-        return e;
-    }
-    [w] {
-        e.cmd = {};
-        e.buf = buffer_move_next_word(std::move(e.buf));
-        return e;
-    }
-    [∂] {
-        e.cmd = {};
-        sprintf(e.status, "deriving...");
-        return e;
-    }
-    [s] {
-        e.cmd = {};
-        e.saving = true;
-        return e;
-    }
-    [\x1b] {
-        e.cmd = {};
-        e.visual_marker = {};
         return e;
     }
     * {

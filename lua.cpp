@@ -6,8 +6,8 @@ int lua_line_sub(lua_State *L) {
     assert(lua_gettop(L) == 3); /* number of arguments */
     assert(lua_isnumber(L, -1));
     assert(lua_isnumber(L, -2));
-    int from = (int) lua_tonumber(L, -2) - 1; // lua 1-indexed
-    int to = (int) lua_tonumber(L, -1) - 1; // lua 1-indexed
+    long int from = lua_tointeger(L, -2) - 1; // lua 1-indexed
+    long int to = lua_tointeger(L, -1) - 1; // lua 1-indexed
     size_t len = to - from + 1;
     assert(len >= 0);
     assert(lua_isuserdata(L, -3));
@@ -21,6 +21,31 @@ int lua_line_sub(lua_State *L) {
     lua_settable(L, -3);
     lua_setmetatable(L, -2);
     return 1; 
+}
+
+int lua_line_create(lua_State *L) {
+    buffer_char* line = (buffer_char*) lua_newuserdata(L, sizeof(buffer_char));
+    line[0] = 0;
+    lua_newtable(L);
+    lua_pushstring(L, "__len");
+    lua_pushcfunction(L, lua_line_len);
+    lua_settable(L, -3);
+    lua_setmetatable(L, -2);
+    return 1; 
+}
+
+int lua_lines_insert(lua_State *L) {
+    // TODO: Why is this value 2? Shouldn't it be 1?
+    assert(lua_gettop(L) == 3); /* number of arguments */
+    assert(lua_isuserdata(L, -1)); // value
+    assert(lua_isnumber(L, -2)); // pos
+    assert(lua_isuserdata(L, -3)); // lines
+    buffer_char* line = (buffer_char*) lua_touserdata(L, -1);
+    long int pos = lua_tointeger(L, -2) - 1;
+    buffer_lines& lines = **((buffer_lines**) lua_touserdata(L, -3));
+    lines.insert(lines.begin() + pos, std::make_shared<buffer_line>(
+        buffer_line(line + 1, line[0])));
+    return 0; /* number of results */
 }
 
 int lua_lines_len(lua_State *L) {
