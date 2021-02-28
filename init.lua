@@ -37,7 +37,6 @@ bindings = {
                 buffer.y = y - 1
                 buffer.lines[y - 1] = buffer.lines[y - 1] .. buffer.lines[y]
                 lines.remove(buffer.lines, y)
-            else
             end
         end,
         ["\t"] = function()
