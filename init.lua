@@ -4,6 +4,7 @@ MODE_INSERT = 1
 local KEY_ESC = "\27"
 local KEY_DEL = "\127"
 local KEY_ENTER = "\r"
+local KEY_TAB = "\t"
 
 lines = {}
 
@@ -20,18 +21,20 @@ bindings = {
             buffer.mode = MODE_NORMAL
         end,
         [KEY_ENTER] = function()
-            local x, y = buffer.x, buffer.y
+            local y = buffer.y
+            local x = math.min(buffer.x, #buffer.lines[y] + 1)
             lines.insert(buffer.lines, y + 1, buffer.lines[y]:sub(x))
             buffer.lines[y] = buffer.lines[y]:sub(1, x - 1)
             buffer.y = y + 1
             buffer.x = 1
         end,
         [KEY_DEL] = function()
-            local x, y = buffer.x, buffer.y
-            local line = buffer.lines[buffer.y]
+            local y = buffer.y
+            local x = math.min(buffer.x, #buffer.lines[y] + 1)
+            local line = buffer.lines[y]
             if x > 1 then
                 buffer.lines[y] = line:sub(1, x - 2) .. line:sub(x)
-                buffer.x = buffer.x - 1
+                buffer.x = x - 1
             elseif y > 1 then
                 buffer.x = #buffer.lines[y - 1] + 1
                 buffer.y = y - 1
@@ -39,7 +42,7 @@ bindings = {
                 lines.remove(buffer.lines, y)
             end
         end,
-        ["\t"] = function()
+        [KEY_TAB] = function()
             buffer.lines[buffer.y] = buffer.lines[buffer.y]:sub(1, buffer.x - 1)
                                   .. line.char(string.byte("    ", 1, 4))
                                   .. buffer.lines[buffer.y]:sub(buffer.x)
