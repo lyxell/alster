@@ -1,7 +1,7 @@
 MODE_NORMAL = 0
 MODE_INSERT = 1
 
-KEY_ESC = "\27"
+local KEY_ESC = "\27"
 
 lines = {}
 
@@ -12,25 +12,18 @@ buffer = {
     mode = MODE_NORMAL
 }
 
-config = {
-    bindings = {},
-    bind = function(str, fn)
-        config.bindings[str] = fn
-    end
-}
-
 bindings = {
     insert = {
         [KEY_ESC] = function()
             buffer.mode = MODE_NORMAL
         end,
         ["\r"] = function()
-            local l = buffer.lines[buffer.y]
-            local left, right = line.sub(l, 1, buffer.x - 1),
-                                line.sub(l, buffer.x)
-            lines.insert(buffer.lines, buffer.y + 1, right)
-            buffer.lines[buffer.y] = left
-            buffer.y = buffer.y + 1
+            local x, y = buffer.x, buffer.y
+            local l = buffer.lines[y]
+            local left, right = line.sub(l, 1, x - 1), line.sub(l, x)
+            lines.insert(buffer.lines, y + 1, right)
+            buffer.lines[y] = left
+            buffer.y = y + 1
             buffer.x = 1
         end
     },
