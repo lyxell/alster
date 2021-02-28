@@ -3,14 +3,14 @@
 
 // pure function
 static editor editor_handle_command_normal(editor e) {
-    if (e.bindings.find(e.cmd) != e.bindings.end()) {
+    if (e.bindings_normal.find(e.cmd) != e.bindings_normal.end()) {
         e.lua_function = e.cmd;
         e.cmd = {};
         return e;
     }
     // check if e.cmd is a prefix of some command
-    if (e.bindings.upper_bound(e.cmd) != e.bindings.end()) {
-        auto next = *e.bindings.upper_bound(e.cmd);
+    if (e.bindings_normal.upper_bound(e.cmd) != e.bindings_normal.end()) {
+        auto next = *e.bindings_normal.upper_bound(e.cmd);
         if (next.find(e.cmd) == 0) {
             return e;
         }
@@ -21,21 +21,22 @@ static editor editor_handle_command_normal(editor e) {
 
 // pure function
 static editor editor_handle_command_insert(editor e) {
+    if (e.bindings_insert.find(e.cmd) != e.bindings_insert.end()) {
+        e.lua_function = e.cmd;
+        e.cmd = {};
+        return e;
+    }
+    // check if e.cmd is a prefix of some command
+    if (e.bindings_insert.upper_bound(e.cmd) != e.bindings_insert.end()) {
+        auto next = *e.bindings_insert.upper_bound(e.cmd);
+        if (next.find(e.cmd) == 0) {
+            return e;
+        }
+    }
     if (e.cmd[0] == '\x7f' || e.cmd[0] == '\b') {
         e.cmd = {};
         e.future.clear();
         e.buf = buffer_erase(std::move(e.buf));
-        return e;
-    }
-    if (e.cmd[0] == '\x1b') {
-        e.cmd = {};
-        e.mode = MODE_NORMAL;
-        return e;
-    }
-    if (e.cmd[0] == '\r') {
-        e.cmd = {};
-        e.future.clear();
-        e.buf = buffer_break_line(std::move(e.buf));
         return e;
     }
     if (e.cmd[0] == '\t') {

@@ -32,9 +32,9 @@ int lua_line_sub(lua_State *L) {
         assert(lua_isuserdata(L, -2));
         line = (buffer_char*) lua_touserdata(L, -2);
         start = lua_tointeger(L, -1) - 1;
-        end = line[0];
+        end = line[0] - 1;
     }
-    create_line(L, line + 1 + start, line + 1 + end);
+    create_line(L, line + 1 + start, line + 1 + end + 1);
     return 1; 
 }
 

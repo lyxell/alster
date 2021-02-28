@@ -22,7 +22,8 @@ struct editor {
     size_t scroll;
     const char* filename;
     std::optional<buffer_position> visual_marker;
-    std::set<std::u32string> bindings;
+    std::set<std::u32string> bindings_normal;
+    std::set<std::u32string> bindings_insert;
     std::optional<std::u32string> lua_function;
 };
 

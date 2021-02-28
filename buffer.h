@@ -46,6 +46,5 @@ buffer buffer_erase(buffer);
 buffer buffer_break_line(buffer);
 buffer buffer_move_end(buffer);
 buffer buffer_move_end_of_line(buffer);
-buffer buffer_erase_current_line(buffer);
 buffer buffer_indent(buffer);
 buffer buffer_move_next_word(buffer);

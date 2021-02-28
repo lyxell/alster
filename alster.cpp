@@ -33,13 +33,13 @@ struct timer {
 };
 
 template <typename T>
-std::set<std::u32string> get_bindings(T lua_state) {
+std::set<std::u32string> get_bindings(T lua_state, const char* mode) {
     std::set<std::u32string> bindings;
     // push config
-    lua_getglobal(lua_state, "config");
+    lua_getglobal(lua_state, "bindings");
     assert(lua_istable(lua_state, -1));
     // push bindings
-    lua_getfield(lua_state, -1, "bindings");
+    lua_getfield(lua_state, -1, mode);
     // traverse bindings
     lua_pushnil(lua_state);
     while (lua_next(lua_state, -2) != 0) {
@@ -68,7 +68,8 @@ int main(int argc, char* argv[]) {
     auto L = luaL_newstate();
     luaL_openlibs(L);
     assert(luaL_dofile(L, "init.lua") == 0);
-    e.bindings = get_bindings(L);
+    e.bindings_normal = get_bindings(L, "normal");
+    e.bindings_insert = get_bindings(L, "insert");
     // end load functions -->
 
     if (argc > 1) {
@@ -142,8 +143,8 @@ int main(int argc, char* argv[]) {
             lua_settable(L, -3);
             lua_pop(L, 1); // pop buffer
             // done with buffer
-            lua_getglobal(L, "config");
-            lua_getfield(L, -1, "bindings");
+            lua_getglobal(L, "bindings");
+            lua_getfield(L, -1, e.mode == MODE_NORMAL ? "normal" : "insert");
             lua_getfield(L, -1, utf8_encode(*e.lua_function).c_str());
             assert(lua_isfunction(L, -1));
             lua_call(L, 0, 0);

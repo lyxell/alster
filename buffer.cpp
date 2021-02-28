@@ -6,31 +6,6 @@
  * All of these are pure functions modulo memory allocations.
  */
 
-/**
- * Report whether we have an underflow, overflow or
- * a balance of brackets on a line.
- */
-static int bracket_balance(const buffer_line& line) {
-    int count = 0;
-    for (auto c : line) {
-        if (c == '(' || c == '[' || c == '{') {
-            count++;
-        } else if (count > 0 && (c == ')' || c == ']' || c == '}')) {
-            count--;
-        }
-    }
-    return count;
-}
-
-static int indentation_level(const buffer_line& line) {
-    int count = 0;
-    for (auto c : line) {
-        if (c == ' ') count++;
-        else break;
-    }
-    return count;
-}
-
 static buffer_char opposite_bracket(buffer_char c) {
     switch (c) {
         case '(': return ')';
@@ -83,18 +58,6 @@ buffer buffer_move_next_word(buffer buf) {
     return buf;
 }
 
-buffer buffer_erase_current_line(buffer buf) {
-    if (buf.lines.size() == 1) {
-        return {{std::make_shared<buffer_line>()}, buf.pos};
-    }
-    buf.lines.erase(buf.lines.begin() + buf.pos.y);
-    auto y = std::min(buf.pos.y, buf.lines.size() - 1);
-    return {
-        std::move(buf.lines),
-        {buf.pos.x, y}
-    };
-}
-
 buffer buffer_insert(buffer buf, buffer_char c) {
     auto& [lines, pos] = buf;
     auto& [x, y] = pos;
@@ -116,37 +79,6 @@ buffer buffer_insert(buffer buf, buffer_char c) {
     }
     line.insert(x, 1, c);
     x = x + 1;
-    return buf;
-}
-
-buffer buffer_break_line(buffer buf) {
-    auto& [lines, pos] = buf;
-    auto& [x, y] = pos;
-    x = std::min(lines[y]->size(), x);
-    /* clone line if someone else holds a reference to it */
-    if (lines[y].use_count() > 1) {
-        lines[y] = std::make_shared<buffer_line>(*lines[y]);
-    }
-    lines.insert(lines.begin() + y + 1, std::make_shared<buffer_line>());
-    auto& upper_line = *lines[y];
-    auto& lower_line = *lines[y+1];
-    lower_line.insert(lower_line.size(), upper_line.substr(x));
-    upper_line.erase(x);
-    x = 0;
-    y++;
-    /* use same indentation as previous line */
-    lower_line.insert(0, indentation_level(upper_line), ' ');
-    x += indentation_level(upper_line);
-    /* increase indentation if the previous line has an open bracket */
-    /* TODO: improve */
-    if (bracket_balance(upper_line) > 0) {
-        if (lower_line.substr(x) == U"}" || lower_line.substr(x) == U")") {
-            lines.insert(lines.begin() + y + 1, std::make_shared<buffer_line>(lower_line));
-            lower_line.erase(x);
-        }
-        lower_line.insert(0, 4, ' ');
-        x += 4;
-    }
     return buf;
 }
 
