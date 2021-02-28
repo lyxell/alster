@@ -1,10 +1,5 @@
-#include <cstring>
-#include <cassert>
-
 #include "editor.h"
 #include "window.h"
-#include "utf8.h"
-#include "unicode.h"
 
 // pure function
 static editor editor_handle_command_normal(editor e) {
@@ -61,7 +56,6 @@ editor editor_handle_command(editor e) {
     } else if (e.mode == MODE_NORMAL) {
         return editor_handle_command_normal(std::move(e));
     }
-    assert(false);
     return e;
 }
 
@@ -90,3 +84,4 @@ window editor_draw(editor& e, window old) {
     printf("%s", window_to_string(win).c_str());
     return win;
 }
+
