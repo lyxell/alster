@@ -82,38 +82,3 @@ buffer buffer_insert(buffer buf, buffer_char c) {
     return buf;
 }
 
-buffer buffer_erase(buffer buf) {
-    auto& [lines, pos] = buf;
-    auto& [x, y] = pos;
-    x = std::min(x, lines[y]->size());
-    if (x > 0) {
-        x--;
-        /* clone line if someone else holds a reference to it */
-        if (lines[y].use_count() > 1) {
-            lines[y] = std::make_shared<buffer_line>(*lines[y]);
-        }
-        auto& line = *lines[y];
-        /* remove corresponding bracket, if any */
-        if (line.size() > x + 1 && opposite_bracket(line[x]) == line[x + 1]) {
-            line.erase(x + 1, 1);
-        }
-        line.erase(x, 1);
-    } else if (y > 0) {
-        y--;
-        x = lines[y]->size();
-        /* clone line if someone else holds a reference to it */
-        if (lines[y].use_count() > 1) {
-            lines[y] = std::make_shared<buffer_line>(*lines[y]);
-        }
-        lines[y]->insert(lines[y]->end(), lines[y+1]->begin(),
-                                          lines[y+1]->end());
-        lines.erase(lines.begin() + y + 1);
-    }
-    return buf;
-}
-
-buffer buffer_indent(buffer buf) {
-    for (int i = 0; i < 4; i++)
-        buf = buffer_insert(std::move(buf), ' ');
-    return buf;
-}

@@ -33,18 +33,6 @@ static editor editor_handle_command_insert(editor e) {
             return e;
         }
     }
-    if (e.cmd[0] == '\x7f' || e.cmd[0] == '\b') {
-        e.cmd = {};
-        e.future.clear();
-        e.buf = buffer_erase(std::move(e.buf));
-        return e;
-    }
-    if (e.cmd[0] == '\t') {
-        e.cmd = {};
-        e.future.clear();
-        e.buf = buffer_indent(std::move(e.buf));
-        return e;
-    }
     e.buf = buffer_insert(std::move(e.buf), e.cmd[0]);
     e.cmd = {};
     return e;

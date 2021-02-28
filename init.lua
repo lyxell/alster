@@ -2,6 +2,8 @@ MODE_NORMAL = 0
 MODE_INSERT = 1
 
 local KEY_ESC = "\27"
+local KEY_DEL = "\127"
+local KEY_ENTER = "\r"
 
 lines = {}
 
@@ -17,32 +19,49 @@ bindings = {
         [KEY_ESC] = function()
             buffer.mode = MODE_NORMAL
         end,
-        ["\r"] = function()
+        [KEY_ENTER] = function()
             local x, y = buffer.x, buffer.y
-            local l = buffer.lines[y]
-            local left, right = line.sub(l, 1, x - 1), line.sub(l, x)
-            lines.insert(buffer.lines, y + 1, right)
-            buffer.lines[y] = left
+            lines.insert(buffer.lines, y + 1, buffer.lines[y]:sub(x))
+            buffer.lines[y] = buffer.lines[y]:sub(1, x - 1)
             buffer.y = y + 1
             buffer.x = 1
+        end,
+        [KEY_DEL] = function()
+            local x, y = buffer.x, buffer.y
+            local line = buffer.lines[buffer.y]
+            if x > 1 then
+                buffer.lines[y] = line:sub(1, x - 2) .. line:sub(x)
+                buffer.x = buffer.x - 1
+            elseif y > 1 then
+                buffer.x = #buffer.lines[y - 1] + 1
+                buffer.y = y - 1
+                buffer.lines[y - 1] = buffer.lines[y - 1] .. buffer.lines[y]
+                lines.remove(buffer.lines, y)
+            else
+            end
+        end,
+        ["\t"] = function()
+            buffer.lines[buffer.y] = buffer.lines[buffer.y]:sub(1, buffer.x - 1)
+                                  .. line.char(string.byte("    ", 1, 4))
+                                  .. buffer.lines[buffer.y]:sub(buffer.x)
+            buffer.x = buffer.x + 4
         end
     },
     normal = {
-        ["h"] = function()
+        ["h"] = function(n)
             buffer.x = math.max(buffer.x - 1, 1)
         end,
-        ["j"] = function()
+        ["j"] = function(n)
             buffer.y = math.min(buffer.y + 1, #buffer.lines)
         end,
-        ["k"] = function()
+        ["k"] = function(n)
             buffer.y = math.max(buffer.y - 1, 1)
         end,
-        ["l"] = function()
+        ["l"] = function(n)
             buffer.x = math.min(buffer.x + 1, #(buffer.lines[buffer.y]) + 1)
         end,
         ["d$"] = function()
-            buffer.lines[buffer.y] =
-                line.sub(buffer.lines[buffer.y], 1, buffer.x - 1)
+            buffer.lines[buffer.y] = buffer.lines[buffer.y]:sub(1, buffer.x - 1)
         end,
         ["gg"] = function()
             buffer.x = 1
@@ -69,13 +88,13 @@ bindings = {
             buffer.x = 1
         end,
         ["o"] = function()
-            lines.insert(buffer.lines, buffer.y + 1, line.create())
+            lines.insert(buffer.lines, buffer.y + 1, line.char())
             buffer.x = 1
             buffer.y = buffer.y + 1
             buffer.mode = MODE_INSERT
         end,
         ["O"] = function()
-            lines.insert(buffer.lines, buffer.y, line.create())
+            lines.insert(buffer.lines, buffer.y, line.char())
             buffer.x = 1
             buffer.mode = MODE_INSERT
         end,

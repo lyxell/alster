@@ -1,5 +1,6 @@
 #include "buffer.h"
 #include "lua.h"
+#include "utf8.h"
 #include <cassert>
 
 template<typename It>
@@ -13,7 +14,24 @@ static void create_line(lua_State *L, It start, It end) {
     lua_pushstring(L, "__len");
     lua_pushcfunction(L, lua_line_len);
     lua_settable(L, -3);
+    lua_pushstring(L, "__concat");
+    lua_pushcfunction(L, lua_line_concat);
+    lua_settable(L, -3);
+    lua_pushstring(L, "__index");
+    lua_getglobal(L, "line");
+    lua_settable(L, -3);
     lua_setmetatable(L, -2);
+}
+
+int lua_line_concat(lua_State *L) {
+    assert(lua_gettop(L) == 2);
+    assert(lua_isuserdata(L, -1));
+    assert(lua_isuserdata(L, -2));
+    auto l1 = (buffer_char*) lua_touserdata(L, -1);
+    auto l2 = (buffer_char*) lua_touserdata(L, -2);
+    auto res = buffer_line(l2 + 1, l2[0]) + buffer_line(l1 + 1, l1[0]);
+    create_line(L, res.begin(), res.end());
+    return 1; 
 }
 
 int lua_line_sub(lua_State *L) {
@@ -38,9 +56,16 @@ int lua_line_sub(lua_State *L) {
     return 1; 
 }
 
-int lua_line_create(lua_State *L) {
-    buffer_char* p = 0;
-    create_line(L, p, p);
+int lua_line_char(lua_State *L) {
+    std::string res;
+    while (lua_gettop(L) > 0) {
+        assert(lua_isnumber(L, -1));
+        auto c = lua_tointeger(L, -1);
+        res.push_back((char) c);
+        lua_pop(L, 1);
+    }
+    buffer_line b = utf8_decode(res);
+    create_line(L, b.begin(), b.end());
     return 1; 
 }
 

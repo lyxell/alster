@@ -104,8 +104,8 @@ int main(int argc, char* argv[]) {
     lua_pushstring(L, "sub");
     lua_pushcfunction(L, lua_line_sub);
     lua_settable(L, -3);
-    lua_pushstring(L, "create");
-    lua_pushcfunction(L, lua_line_create);
+    lua_pushstring(L, "char");
+    lua_pushcfunction(L, lua_line_char);
     lua_settable(L, -3);
     lua_setglobal(L, "line");
 
