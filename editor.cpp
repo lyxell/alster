@@ -8,7 +8,6 @@
 
 // pure function
 static editor editor_handle_command_normal(editor e) {
-    const char32_t *YYCURSOR = e.cmd.c_str();
     if (e.bindings.find(e.cmd) != e.bindings.end()) {
         e.lua_function = e.cmd;
         e.cmd = {};
@@ -27,40 +26,31 @@ static editor editor_handle_command_normal(editor e) {
 
 // pure function
 static editor editor_handle_command_insert(editor e) {
-    const char32_t *YYCURSOR = e.cmd.c_str();
-    /*!re2c
-    re2c:yyfill:enable = 0;
-    re2c:define:YYCTYPE = char32_t;
-    "\x7f" | "\b" {
+    if (e.cmd[0] == '\x7f' || e.cmd[0] == '\b') {
         e.cmd = {};
         e.future.clear();
         e.buf = buffer_erase(std::move(e.buf));
         return e;
     }
-    "\x1b" {
+    if (e.cmd[0] == '\x1b') {
         e.cmd = {};
         e.mode = MODE_NORMAL;
         return e;
     }
-    "\r" {
+    if (e.cmd[0] == '\r') {
         e.cmd = {};
         e.future.clear();
         e.buf = buffer_break_line(std::move(e.buf));
         return e;
     }
-    "\t" {
+    if (e.cmd[0] == '\t') {
         e.cmd = {};
         e.future.clear();
         e.buf = buffer_indent(std::move(e.buf));
         return e;
     }
-    * {
-        e.cmd = {};
-        e.buf = buffer_insert(std::move(e.buf), yych);
-        return e;
-    }
-    */
-    assert(false);
+    e.buf = buffer_insert(std::move(e.buf), e.cmd[0]);
+    e.cmd = {};
     return e;
 }
 
@@ -98,8 +88,5 @@ window editor_draw(editor& e, window old) {
         printf("\x1b[2 q");
     }
     printf("%s", window_to_string(win).c_str());
-    if (strlen(e.status)) {
-        printf("\x1b[%ld;%ldH%s\033[K", win.height, 0ul, (is_regex_word(e.buf.lines[e.buf.pos.y]->at(e.buf.pos.x)) ? "yes" : "no"));
-    }
     return win;
 }
