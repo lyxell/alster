@@ -67,9 +67,6 @@ int main(int argc, char* argv[]) {
     // <-- load functions
     auto L = luaL_newstate();
     luaL_openlibs(L);
-    assert(luaL_dofile(L, "init.lua") == 0);
-    e.bindings_normal = get_bindings(L, "normal");
-    e.bindings_insert = get_bindings(L, "insert");
     // end load functions -->
 
     if (argc > 1) {
@@ -81,7 +78,7 @@ int main(int argc, char* argv[]) {
     }
     assert(tty_enable_raw_mode() == 0);
     
-    lua_getglobal(L, "buffer");
+    lua_newtable(L);
     lua_pushstring(L, "lines");
     buffer_lines** mem = (buffer_lines**) lua_newuserdata(L, sizeof(buffer_lines*));
     *mem = &(e.buf.lines);
@@ -97,7 +94,7 @@ int main(int argc, char* argv[]) {
     lua_settable(L, -3);
     lua_setmetatable(L, -2);
     lua_settable(L, -3);
-    lua_pop(L, 1); // pop buffer
+    lua_setglobal(L, "buffer");
 
     // create line api
     lua_newtable(L);
@@ -118,6 +115,11 @@ int main(int argc, char* argv[]) {
     lua_pushcfunction(L, lua_lines_remove);
     lua_settable(L, -3);
     lua_setglobal(L, "lines");
+
+    // load init
+    assert(luaL_dofile(L, "init.lua") == 0);
+    e.bindings_normal = get_bindings(L, "normal");
+    e.bindings_insert = get_bindings(L, "insert");
 
     while (true) {
         win = editor_draw(e, win);

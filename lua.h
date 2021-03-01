@@ -10,6 +10,7 @@ int lua_lines_index(lua_State *L);
 int lua_lines_newindex(lua_State *L);
 int lua_lines_insert(lua_State *L);
 int lua_line_sub(lua_State *L);
+int lua_line_eq(lua_State *L);
 int lua_line_char(lua_State *L);
 int lua_line_concat(lua_State *L);
 int lua_lines_remove(lua_State *L);

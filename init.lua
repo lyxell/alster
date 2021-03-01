@@ -1,19 +1,21 @@
-MODE_NORMAL = 0
-MODE_INSERT = 1
+local MODE_NORMAL = 0
+local MODE_INSERT = 1
 
+local INDENTATION = line.char(string.byte("    ", 1, 4))
 local KEY_ESC = "\27"
 local KEY_DEL = "\127"
 local KEY_ENTER = "\r"
 local KEY_TAB = "\t"
 
-lines = {}
-
-buffer = {
-    x = 1,
-    y = 1,
-    lines = {},
-    mode = MODE_NORMAL
-}
+get_indentation = function(line)
+    local i = 1
+    local res = 0
+    while line:sub(i, i + 3) == INDENTATION do
+        res = res + 1
+        i = i + #INDENTATION
+    end
+    return res
+end
 
 bindings = {
     insert = {
@@ -21,12 +23,20 @@ bindings = {
             buffer.mode = MODE_NORMAL
         end,
         [KEY_ENTER] = function()
+            local prev_indent = 0
             local y = buffer.y
             local x = math.min(buffer.x, #buffer.lines[y] + 1)
+            if y > 1 then
+                prev_indent = get_indentation(buffer.lines[y])
+            end
             lines.insert(buffer.lines, y + 1, buffer.lines[y]:sub(x))
             buffer.lines[y] = buffer.lines[y]:sub(1, x - 1)
             buffer.y = y + 1
             buffer.x = 1
+            for i = 1, prev_indent, 1 do
+                buffer.lines[buffer.y] = INDENTATION .. buffer.lines[buffer.y]
+                buffer.x = buffer.x + #INDENTATION
+            end
         end,
         [KEY_DEL] = function()
             local y = buffer.y
@@ -44,12 +54,15 @@ bindings = {
         end,
         [KEY_TAB] = function()
             buffer.lines[buffer.y] = buffer.lines[buffer.y]:sub(1, buffer.x - 1)
-                                  .. line.char(string.byte("    ", 1, 4))
+                                  .. INDENTATION
                                   .. buffer.lines[buffer.y]:sub(buffer.x)
             buffer.x = buffer.x + 4
         end
     },
     normal = {
+        ["J"] = function(n)
+
+        end,
         ["h"] = function(n)
             buffer.x = math.max(buffer.x - 1, 1)
         end,
