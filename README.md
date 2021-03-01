@@ -1,3 +1,7 @@
+## Packages
+
+Maybe autoindentation should be a package?
+
 ## Most notable features
 
 * Undo/redo actually gives intuitive buffer positions, i.e.

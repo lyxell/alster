@@ -153,6 +153,10 @@ int lua_lines_index(lua_State *L) {
     assert(lua_isnumber(L, -1));
     assert(lua_isuserdata(L, -2));
     long int line_index = lua_tointeger(L, -1) - 1;
+    if (line_index < 0) {
+        lua_pushnil(L);
+        return 1;
+    }
     auto& lines = **((buffer_lines**) lua_touserdata(L, -2));
     create_line(L, lines[line_index]->begin(), lines[line_index]->end());
     return 1;

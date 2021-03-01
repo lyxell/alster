@@ -1,21 +1,34 @@
 local MODE_NORMAL = 0
 local MODE_INSERT = 1
 
-local INDENTATION = line.char(string.byte("    ", 1, 4))
 local KEY_ESC = "\27"
 local KEY_DEL = "\127"
 local KEY_ENTER = "\r"
 local KEY_TAB = "\t"
 
-get_indentation = function(line)
+-- indentation
+local INDENTATION = line.char(string.byte("    ", 1, 4))
+getindentation = function(l)
     local i = 1
     local res = 0
-    while line:sub(i, i + 3) == INDENTATION do
+    while l:sub(i, i + 3) == INDENTATION do
         res = res + 1
         i = i + #INDENTATION
     end
     return res
 end
+autoindent = function(l, prevline)
+    local previndent = 0
+    if prevline ~= nil then
+        previndent = getindentation(prevline)
+    end
+    for i = 1, previndent, 1 do
+        l = INDENTATION .. l
+    end
+    return l
+end
+
+-- bindings
 
 bindings = {
     insert = {
@@ -23,20 +36,15 @@ bindings = {
             buffer.mode = MODE_NORMAL
         end,
         [KEY_ENTER] = function()
-            local prev_indent = 0
             local y = buffer.y
             local x = math.min(buffer.x, #buffer.lines[y] + 1)
-            if y > 1 then
-                prev_indent = get_indentation(buffer.lines[y])
-            end
-            lines.insert(buffer.lines, y + 1, buffer.lines[y]:sub(x))
-            buffer.lines[y] = buffer.lines[y]:sub(1, x - 1)
+            local above = buffer.lines[y]:sub(1, x-1)
+            local below = buffer.lines[y]:sub(x)
+            below = autoindent(below, above)
+            buffer.lines[y] = above
+            lines.insert(buffer.lines, y + 1, below)
             buffer.y = y + 1
-            buffer.x = 1
-            for i = 1, prev_indent, 1 do
-                buffer.lines[buffer.y] = INDENTATION .. buffer.lines[buffer.y]
-                buffer.x = buffer.x + #INDENTATION
-            end
+            buffer.x = #INDENTATION * getindentation(buffer.lines[y+1]) + 1
         end,
         [KEY_DEL] = function()
             local y = buffer.y
@@ -60,9 +68,6 @@ bindings = {
         end
     },
     normal = {
-        ["J"] = function(n)
-
-        end,
         ["h"] = function(n)
             buffer.x = math.max(buffer.x - 1, 1)
         end,
@@ -118,7 +123,11 @@ bindings = {
         end,
         ["dd"] = function()
             lines.remove(buffer.lines, buffer.y)
-        end
+        end,
+        ["=="] = function(n)
+            buffer.lines[buffer.y] = autoindent(buffer.lines[buffer.y],
+                                                buffer.lines[buffer.y - 1])
+        end,
     }
 }
 
