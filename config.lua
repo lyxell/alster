@@ -41,23 +41,6 @@ bindings = {
                 buffer = b:sub(1, y - 1) .. b:sub(y + 1)
             }
         end,
-        ["o"] = function(state)
-            local b, y = state.buffer, state.position.y
-            local indent = 0
-            local addition = b:sub(y, y):map(function(l)
-                local line = l:sub(1,0):autoindent(l)
-                indent = #line
-                return line
-            end)
-            return {
-                buffer = b:sub(1, y) .. addition .. b:sub(y),
-                pos = {
-                    indent,
-                    y + 1
-                },
-                mode = "insert"
-            }
-        end,
         ["i"] = function(state)
             return {
                 mode = "insert"

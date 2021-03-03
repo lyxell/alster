@@ -95,70 +95,12 @@ int lua_line_char(lua_State *L) {
     return 1; 
 }
 
-int lua_lines_insert(lua_State *L) {
-    assert(lua_gettop(L) == 3);
-    assert(lua_isuserdata(L, -1));
-    assert(lua_isnumber(L, -2));
-    assert(lua_isuserdata(L, -3));
-    auto line = (buffer_char*) lua_touserdata(L, -1);
-    auto line_index = lua_tointeger(L, -2) - 1;
-    auto& lines = **((buffer_lines**) lua_touserdata(L, -3));
-    lines.insert(lines.begin() + line_index, std::make_shared<buffer_line>(
-        buffer_line(line + 1, line[0])));
-    return 0;
-}
-
-int lua_lines_remove(lua_State *L) {
-    assert(lua_gettop(L) == 2);
-    assert(lua_isnumber(L, -1));
-    assert(lua_isuserdata(L, -2));
-    auto line_index = lua_tointeger(L, -1) - 1;
-    auto& lines = **((buffer_lines**) lua_touserdata(L, -2));
-    lines.erase(lines.begin() + line_index);
-    return 0;
-}
-
-int lua_lines_len(lua_State *L) {
-    assert(lua_gettop(L) == 2);
-    assert(lua_isnil(L, -1));
-    assert(lua_isuserdata(L, -2));
-    auto& lines = **((buffer_lines**) lua_touserdata(L, -2));
-    lua_pushinteger(L, (int) lines.size());
-    return 1;
-}
-
 int lua_line_len(lua_State *L) {
     assert(lua_gettop(L) == 2);
     assert(lua_isnil(L, -1));
     assert(lua_isuserdata(L, -2));
     auto line = (buffer_char*) lua_touserdata(L, -2);
     lua_pushinteger(L, (int) line[0]);
-    return 1;
-}
-
-int lua_lines_newindex(lua_State *L) {
-    assert(lua_gettop(L) == 3);
-    assert(lua_isuserdata(L, -1));
-    assert(lua_isnumber(L, -2));
-    assert(lua_isuserdata(L, -3));
-    auto line = (buffer_char*) lua_touserdata(L, -1);
-    auto line_index = lua_tointeger(L, -2) - 1;
-    auto& lines = **((buffer_lines**) lua_touserdata(L, -3));
-    lines[line_index] = std::make_shared<buffer_line>(line + 1, line[0]);
-    return 0;
-}
-
-int lua_lines_index(lua_State *L) {
-    assert(lua_gettop(L) == 2);
-    assert(lua_isnumber(L, -1));
-    assert(lua_isuserdata(L, -2));
-    long int line_index = lua_tointeger(L, -1) - 1;
-    if (line_index < 0) {
-        lua_pushnil(L);
-        return 1;
-    }
-    auto& lines = **((buffer_lines**) lua_touserdata(L, -2));
-    create_line(L, lines[line_index]->begin(), lines[line_index]->end());
     return 1;
 }
 
