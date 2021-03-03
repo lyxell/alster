@@ -79,28 +79,6 @@ int main(int argc, char* argv[]) {
     std::vector<buffer_lines> reference_holder = {};
     assert(tty_enable_raw_mode() == 0);
     
-    // create line api
-    /*
-    lua_newtable(L);
-    lua_pushstring(L, "sub");
-    lua_pushcfunction(L, lua_line_sub);
-    lua_settable(L, -3);
-    lua_pushstring(L, "char");
-    lua_pushcfunction(L, lua_line_char);
-    lua_settable(L, -3);
-    lua_setglobal(L, "line");
-
-    // create lines api
-    lua_newtable(L);
-    lua_pushstring(L, "insert");
-    lua_pushcfunction(L, lua_lines_insert);
-    lua_settable(L, -3);
-    lua_pushstring(L, "remove");
-    lua_pushcfunction(L, lua_lines_remove);
-    lua_settable(L, -3);
-    lua_setglobal(L, "lines");
-    */
-
     // create buffer api
     lua_newtable(L);
     lua_pushstring(L, "sub");
@@ -109,6 +87,7 @@ int main(int argc, char* argv[]) {
     lua_setglobal(L, "buffer");
 
     // load init
+    assert(luaL_dofile(L, "lua/piecetable.lua") == 0);
     assert(luaL_dofile(L, "config.lua") == 0);
     e.bindings_normal = get_bindings(L, "normal");
 //    e.bindings_insert = get_bindings(L, "insert");
