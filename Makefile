@@ -8,7 +8,6 @@ CXXFLAGS=-std=c++17 \
 
 build/alster: \
 	build/alster.o \
-	build/buffer.o \
 	buffer.h \
 	build/editor.o \
 	build/syntax/c_re2c.o \
@@ -24,7 +23,6 @@ build/alster: \
 	$(CXX) \
 		build/alster.o \
 		build/lua.o \
-		build/buffer.o \
 		build/utf8.o \
 		build/editor.o \
 		build/tty.o \
