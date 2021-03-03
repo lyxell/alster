@@ -17,6 +17,10 @@ history = {
     end
 }
 
+oninsert = function(state, str)
+    return state
+end
+
 bindings = {
     normal = {
         ["q"] = function(state)
@@ -32,13 +36,14 @@ bindings = {
             return {y = math.max(state.y - 1, 1)}
         end,
         ["l"] = function(state)
-            return {x = state.x + 1}
+            return {x = state.x + 1, buffer = state.buffer}
         end,
         ["dd"] = function(state)
             local b, y = state.buffer, state.y
             history:save(b)
             return {
-                buffer = b:sub(1, y - 1) .. b:sub(y + 1)
+--                buffer = b:sub(1, y - 1) .. b:sub(y + 1)
+                buffer = b .. b
             }
         end,
         ["i"] = function(state)

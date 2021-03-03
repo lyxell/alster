@@ -36,7 +36,7 @@ local api = {
             end
         end
         return res
-    end
+    end,
 }
 
 topiecetable = function(t)
@@ -46,5 +46,18 @@ topiecetable = function(t)
     end
     setmetatable(pt, mt)
     pt.sub = api.sub
+    pt.flatten = api.flatten
     return pt
+end
+
+flattenpiecetable = function(pt)
+    t = {}
+    for i, v in ipairs(pt.ptrs) do
+        for j = 1, v.length do
+            table.insert(t, v.data[v.offset + j - 1])
+        end
+--        table.insert(data, table.concat(v.data, ", ", v.offset,
+--                                        v.offset + v.length - 1))
+    end
+    return t
 end

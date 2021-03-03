@@ -1,53 +1,6 @@
 #include "editor.h"
 #include "window.h"
 
-// pure function
-static editor editor_handle_command_normal(editor e) {
-    if (e.bindings_normal.find(e.cmd) != e.bindings_normal.end()) {
-        e.lua_function = e.cmd;
-        e.cmd = {};
-        return e;
-    }
-    // check if e.cmd is a prefix of some command
-    if (e.bindings_normal.upper_bound(e.cmd) != e.bindings_normal.end()) {
-        auto next = *e.bindings_normal.upper_bound(e.cmd);
-        if (next.find(e.cmd) == 0) {
-            return e;
-        }
-    }
-    e.cmd = {};
-    return e;
-}
-
-// pure function
-static editor editor_handle_command_insert(editor e) {
-    if (e.bindings_insert.find(e.cmd) != e.bindings_insert.end()) {
-        e.lua_function = e.cmd;
-        e.cmd = {};
-        return e;
-    }
-    // check if e.cmd is a prefix of some command
-    if (e.bindings_insert.upper_bound(e.cmd) != e.bindings_insert.end()) {
-        auto next = *e.bindings_insert.upper_bound(e.cmd);
-        if (next.find(e.cmd) == 0) {
-            return e;
-        }
-    }
-    e.buf = buffer_insert(std::move(e.buf), e.cmd[0]);
-    e.cmd = {};
-    return e;
-}
-
-// pure function
-editor editor_handle_command(editor e) {
-    if (e.mode == MODE_INSERT) {
-        return editor_handle_command_insert(std::move(e));
-    } else if (e.mode == MODE_NORMAL) {
-        return editor_handle_command_normal(std::move(e));
-    }
-    return e;
-}
-
 // TODO: editor should not be modified
 window editor_draw(editor& e, window old) {
     window win;
