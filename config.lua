@@ -1,0 +1,60 @@
+history = {
+    undodata = {},
+    redodata = {},
+    redo = function(history)
+    end,
+    undo = function(history)
+        assert(#history.undodata > 0)
+        local value = history.undodata[#history.undodata]
+        table.remove(history.undodata)
+        return value
+    end,
+    save = function(history, buffer)
+        table.insert(history.undodata, buffer.lines)
+    end
+}
+
+return {
+    bindings = {
+        normal = {
+            ["dd"] = function(state)
+                local b, y = state.buffer, state.position.y
+                return {
+                    buffer = b:sub(1, y - 2) .. b:sub(y)
+                }
+            end,
+            ["o"] = function(state)
+                local b, y = state.buffer, state.position.y
+                local indent = 0
+                local addition = b:sub(y, y):map(function(l)
+                    local line = l:sub(1,0):autoindent(l)
+                    indent = #line
+                    return line
+                end)
+                return {
+                    buffer = b:sub(1, y) .. addition .. b:sub(y),
+                    pos = {
+                        indent,
+                        y + 1
+                    },
+                    mode = "insert"
+                }
+            end
+            ["i"] = function(state)
+                return {
+                    mode = "insert"
+                }
+            end,
+            ["u"] = function(state)
+                if history:empty() then
+                    return {
+                        status = "History empty"
+                    }
+                end
+                return {
+                    buffer = history:undo()
+                }
+            end
+        }
+    }
+}
