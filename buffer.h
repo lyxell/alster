@@ -37,5 +37,11 @@ struct buffer {
     buffer_position pos;
 };
 
+
+struct buf {
+    size_t num_lines;
+    const buffer_char* lines[];
+};
+
 buffer buffer_insert(buffer, buffer_char);
 buffer buffer_move_next_word(buffer);

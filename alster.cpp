@@ -76,27 +76,11 @@ int main(int argc, char* argv[]) {
         e.buf = {{std::make_shared<buffer_line>()}, {0, 0}};
         e.filename = "/tmp/alster.tmp";
     }
+    std::vector<buffer_lines> reference_holder = {};
     assert(tty_enable_raw_mode() == 0);
     
-    lua_newtable(L);
-    lua_pushstring(L, "lines");
-    buffer_lines** mem = (buffer_lines**) lua_newuserdata(L, sizeof(buffer_lines*));
-    *mem = &(e.buf.lines);
-    lua_newtable(L);
-    lua_pushstring(L, "__index");
-    lua_pushcfunction(L, lua_lines_index);
-    lua_settable(L, -3);
-    lua_pushstring(L, "__newindex");
-    lua_pushcfunction(L, lua_lines_newindex);
-    lua_settable(L, -3);
-    lua_pushstring(L, "__len");
-    lua_pushcfunction(L, lua_lines_len);
-    lua_settable(L, -3);
-    lua_setmetatable(L, -2);
-    lua_settable(L, -3);
-    lua_setglobal(L, "buffer");
-
     // create line api
+    /*
     lua_newtable(L);
     lua_pushstring(L, "sub");
     lua_pushcfunction(L, lua_line_sub);
@@ -115,11 +99,19 @@ int main(int argc, char* argv[]) {
     lua_pushcfunction(L, lua_lines_remove);
     lua_settable(L, -3);
     lua_setglobal(L, "lines");
+    */
+
+    // create buffer api
+    lua_newtable(L);
+    lua_pushstring(L, "sub");
+    lua_pushcfunction(L, lua_buffer_sub);
+    lua_settable(L, -3);
+    lua_setglobal(L, "buffer");
 
     // load init
-    assert(luaL_dofile(L, "init.lua") == 0);
+    assert(luaL_dofile(L, "config.lua") == 0);
     e.bindings_normal = get_bindings(L, "normal");
-    e.bindings_insert = get_bindings(L, "insert");
+//    e.bindings_insert = get_bindings(L, "insert");
 
     while (true) {
         win = editor_draw(e, win);
@@ -129,44 +121,77 @@ int main(int argc, char* argv[]) {
         t.start();
         e = editor_handle_command(std::move(e));
         if (e.lua_function) {
-            // write buffer
-            lua_getglobal(L, "buffer");
-            // push x
-            lua_pushstring(L, "x");
-            lua_pushinteger(L, e.buf.pos.x + 1);
-            lua_settable(L, -3);
-            // push mode
-            lua_pushstring(L, "mode");
-            lua_pushinteger(L, e.mode);
-            lua_settable(L, -3);
-            // push y
-            lua_pushstring(L, "y");
-            lua_pushinteger(L, e.buf.pos.y + 1);
-            lua_settable(L, -3);
-            lua_pop(L, 1); // pop buffer
-            // done with buffer
+            reference_holder.push_back(e.buf.lines);
+            // find function to call
             lua_getglobal(L, "bindings");
             lua_getfield(L, -1, e.mode == MODE_NORMAL ? "normal" : "insert");
             lua_getfield(L, -1, utf8_encode(*e.lua_function).c_str());
             assert(lua_isfunction(L, -1));
-            lua_call(L, 0, 0);
-            lua_pop(L, 1); // pop bindings
-            lua_pop(L, 1); // pop config
-            // read buffer
-            lua_getglobal(L, "buffer");
-            lua_getfield(L, -1, "mode");
-            e.mode = (int) lua_tointeger(L, -1);
+            // set up argument to function
+            lua_newtable(L);
+                // buffer
+                lua_pushstring(L, "buffer");
+                    buf* b = (buf*) lua_newuserdata(L, sizeof(buf)+e.buf.lines.size()*sizeof(char32_t*));
+                    b->num_lines = e.buf.lines.size();
+                    for (size_t i = 0; i < b->num_lines; i++) {
+                        b->lines[i] = e.buf.lines[i]->c_str();
+                    }
+                    luaL_newmetatable(L, "buffer");
+                    lua_pushstring(L, "__concat");
+                    lua_pushcfunction(L, lua_buffer_concat);
+                    lua_settable(L, -3);
+                    lua_pushstring(L, "__len");
+                    lua_pushcfunction(L, lua_buffer_len);
+                    lua_settable(L, -3);
+                    lua_pushstring(L, "__index");
+                    lua_getglobal(L, "buffer");
+                    lua_settable(L, -3);
+                    lua_setmetatable(L, -2);
+                lua_settable(L, -3);
+                // position
+                lua_pushstring(L, "x");
+                lua_pushinteger(L, e.buf.pos.x + 1);
+                lua_settable(L, -3);
+                lua_pushstring(L, "y");
+                lua_pushinteger(L, e.buf.pos.y + 1);
+                lua_settable(L, -3);
+                // mode
+                lua_pushstring(L, "mode");
+                lua_pushinteger(L, e.mode);
+                lua_settable(L, -3);
+            // call function
+            lua_call(L, 1, 1);
+            // read output
+            assert(lua_istable(L, -1));
+                lua_getfield(L, -1, "buffer");
+                    if (!lua_isnil(L, -1)) {
+                        buffer_lines ls = {};
+                        auto bf = (buf*) lua_touserdata(L, -1);
+                        for (size_t i = 0; i < bf->num_lines; i++) {
+                            ls.push_back(std::make_shared<buffer_line>(bf->lines[i]));
+                        }
+                        e.buf.lines = ls;
+                    }
+                    lua_pop(L, 1);
+                lua_getfield(L, -1, "x");
+                    if (!lua_isnil(L, -1)) {
+                        e.buf.pos.x = lua_tointeger(L, -1) - 1;
+                    }
+                    lua_pop(L, 1);
+                lua_getfield(L, -1, "y");
+                    if (!lua_isnil(L, -1)) {
+                        e.buf.pos.y = lua_tointeger(L, -1) - 1;
+                    }
+                    lua_pop(L, 1);
+                lua_getfield(L, -1, "exiting");
+                    if (!lua_isnil(L, -1)) {
+                        e.exiting = true;
+                    }
+                    lua_pop(L, 1);
             lua_pop(L, 1);
-            lua_getfield(L, -1, "x");
-            e.buf.pos.x = lua_tointeger(L, -1) - 1;
-            lua_pop(L, 1);
-            lua_getfield(L, -1, "y");
-            e.buf.pos.y = lua_tointeger(L, -1) - 1;
-            lua_pop(L, 1);
-            lua_getfield(L, -1, "exiting");
-            e.exiting = lua_toboolean(L, -1);
-            lua_pop(L, 1);
-            lua_pop(L, 1); // pop buffer
+            //e.mode = (int) lua_tointeger(L, -1);
+            while (lua_gettop(L))
+                lua_pop(L, 1);
             e.lua_function = {};
         }
         if (e.saving) {
