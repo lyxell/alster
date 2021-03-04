@@ -47,6 +47,17 @@ events = {
 
 bindings = {
     normal = {
+        ["x"] = function(state)
+            local insertion = inspect({1,2,3})
+            local b, x, y = state.buffer, state.x, state.y
+            local line = b:get(y)
+            return {
+                buffer = b:sub(1, y - 1)
+                      .. {line:sub(1, x - 1) .. insertion .. line:sub(x)}
+                      .. b:sub(y + 1),
+                x = x + #insertion
+            }
+        end,
         ["q"] = function(state)
             return {exiting = true}
         end,
