@@ -5,10 +5,10 @@
 window editor_draw(editor& e, window old) {
     window win;
     win = window_update_size(win);
-    if (e.buf.pos.y < e.scroll) {
-        e.scroll = e.buf.pos.y;
-    } else if (e.buf.pos.y >= e.scroll + win.height) {
-        e.scroll = e.buf.pos.y - win.height + 1;
+    if (e.buf.pos.y - 1 < e.scroll) {
+        e.scroll = e.buf.pos.y - 1;
+    } else if (e.buf.pos.y - 1 >= e.scroll + win.height) {
+        e.scroll = e.buf.pos.y - win.height;
     }
     win = window_update_cursor(win, e.buf, e.scroll);
     win = window_render_buffer(win, e.buf, e.scroll);

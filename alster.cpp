@@ -67,10 +67,10 @@ static void push_state(lua_State *L, const editor& e, int BUFFER_REFERENCE) {
     lua_settable(L, -3);
     // position
     lua_pushstring(L, "x");
-    lua_pushinteger(L, e.buf.pos.x + 1);
+    lua_pushinteger(L, e.buf.pos.x);
     lua_settable(L, -3);
     lua_pushstring(L, "y");
-    lua_pushinteger(L, e.buf.pos.y + 1);
+    lua_pushinteger(L, e.buf.pos.y);
     lua_settable(L, -3);
     // mode
     lua_pushstring(L, "mode");
@@ -92,7 +92,6 @@ static void read_state(lua_State *L, editor& e, int BUFFER_REFERENCE) {
             buffer_lines ls = {};
             lua_pushnil(L);
             while (lua_next(L, -2) != 0) {
-                fprintf(stderr, "%s\n", lua_tolstring(L, -1, NULL));
                 std::u32string str;
                 for (auto c : std::string(lua_tolstring(L, -1, NULL)))
                     str.push_back(c);
@@ -109,14 +108,14 @@ static void read_state(lua_State *L, editor& e, int BUFFER_REFERENCE) {
     {
         lua_getfield(L, -1, "x");
         if (!lua_isnil(L, -1)) {
-            e.buf.pos.x = lua_tointeger(L, -1) - 1;
+            e.buf.pos.x = lua_tointeger(L, -1);
         }
         lua_pop(L, 1);
     }
     {
         lua_getfield(L, -1, "y");
         if (!lua_isnil(L, -1)) {
-            e.buf.pos.y = lua_tointeger(L, -1) - 1;
+            e.buf.pos.y = lua_tointeger(L, -1);
         }
         lua_pop(L, 1);
     }
@@ -135,6 +134,8 @@ int main(int argc, char* argv[]) {
     timer t {};
     window win {};
 
+    e.scroll = 0;
+
     // <-- load functions
     auto L = luaL_newstate();
     luaL_openlibs(L);
@@ -147,6 +148,8 @@ int main(int argc, char* argv[]) {
         e.buf = {{std::make_shared<buffer_line>()}, {0, 0}};
         e.filename = "/tmp/alster.tmp";
     }
+    e.buf.pos.x = 1;
+    e.buf.pos.y = 1;
     assert(tty_enable_raw_mode() == 0);
 
     // load aux libs
@@ -172,6 +175,14 @@ int main(int argc, char* argv[]) {
         e.cmd.push_back(utf8_getchar());
         t.start();
         // handle command if match
+        if (e.cmd[0] == 'i') {
+            lua_getglobal(L, "oninsert");
+            push_state(L, e, BUFFER_REFERENCE);
+            lua_pushstring(L, utf8_encode(e.cmd).c_str());
+            lua_call(L, 2, 1);
+            read_state(L, e, BUFFER_REFERENCE);
+            e.cmd = {};
+        }
         if (bindings.find(e.cmd) != bindings.end()) {
             lua_getglobal(L, "bindings");
             lua_getfield(L, -1, e.mode == MODE_NORMAL ? "normal" : "insert");
@@ -179,14 +190,6 @@ int main(int argc, char* argv[]) {
             assert(lua_isfunction(L, -1));
             push_state(L, e, BUFFER_REFERENCE);
             lua_call(L, 1, 1);
-            read_state(L, e, BUFFER_REFERENCE);
-            e.cmd = {};
-        }
-        if (e.cmd.size() == 2 && e.cmd[0] == 'i') {
-            lua_getglobal(L, "oninsert");
-            push_state(L, e, BUFFER_REFERENCE);
-            lua_pushstring(L, utf8_encode(e.cmd).c_str());
-            lua_call(L, 2, 1);
             read_state(L, e, BUFFER_REFERENCE);
             e.cmd = {};
         }

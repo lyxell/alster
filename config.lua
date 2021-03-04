@@ -18,7 +18,10 @@ history = {
 }
 
 oninsert = function(state, str)
-    return state
+    local b, y = state.buffer, state.y
+    return {
+        buffer = b:sub(1, y - 1) .. topiecetable({"x"}) .. b:sub(y + 1)
+    }
 end
 
 bindings = {
@@ -30,13 +33,13 @@ bindings = {
             return {x = math.max(state.x - 1, 1)}
         end,
         ["j"] = function(state)
-            return {y = math.min(state.y + 1, #state.buffer)}
+            return {y = math.min(state.y + 1, state.buffer:len())}
         end,
         ["k"] = function(state)
             return {y = math.max(state.y - 1, 1)}
         end,
         ["l"] = function(state)
-            return {x = state.x + 1, buffer = state.buffer}
+            return {x = math.min(#state.buffer:get(state.y), state.x + 1)}
         end,
         ["dd"] = function(state)
             local b, y = state.buffer, state.y
@@ -46,11 +49,11 @@ bindings = {
                 buffer = b .. b
             }
         end,
-        ["i"] = function(state)
-            return {
-                mode = "insert"
-            }
-        end,
+--        ["i"] = function(state)
+--            return {
+--                mode = "insert"
+--            }
+--        end,
         ["u"] = function(state)
             if history:empty() then
                 return {

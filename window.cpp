@@ -79,15 +79,15 @@ std::string window_to_string(window w) {
             }
         }
     }
-    str += "\x1b[" + std::to_string(w.cursor.y + 1) + ";" +
-                     std::to_string(w.cursor.x + 1) + "H";
+    str += "\x1b[" + std::to_string(w.cursor.y) + ";" +
+                     std::to_string(w.cursor.x) + "H";
     return str;
 }
 
 window window_update_cursor(window w, const buffer& buf, size_t scroll) {
     w.cursor.y = buf.pos.y - scroll;
     w.cursor.x = std::min(
-                   std::min(buf.pos.x, buf.lines[buf.pos.y]->size()),
+                   std::min(buf.pos.x, buf.lines[buf.pos.y-1]->size()),
                    w.width - 1);
     return w;
 }

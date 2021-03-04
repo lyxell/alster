@@ -16,27 +16,43 @@ local mt = {
                                             v.offset + v.length - 1))
         end
         return "{" .. table.concat(data, ", ") .. "}"
+    end,
+    __len = function(pt)
+        return #flattenpiecetable(pt)
     end
 }
 
 local api = {
-    sub = function(pt, i)
+    get = function(pt, i)
+        return (flattenpiecetable(pt))[i]
+    end,
+    sub = function(pt, i, j)
         local res = topiecetable({})
-        shouldskip = i - 1
+        local skip = i - 1
+        local take = math.huge
+        if not (j == nil) then
+            take = j - i + 1
+        end
         for i, v in ipairs(pt.ptrs) do
-            if v.length > shouldskip then
+            if take < 1 then
+                return res
+            elseif v.length > skip then
                 table.insert(res.ptrs, {
                     data = v.data,
-                    offset = v.offset + shouldskip,
-                    length = v.length - shouldskip
+                    offset = v.offset + skip,
+                    length = math.min(v.length - skip, take)
                 })
-                shouldskip = 0
+                take = take - math.min(v.length - skip, take)
+                skip = 0
             else
-                shouldskip = shouldskip - v.length
+                skip = skip - v.length
             end
         end
         return res
     end,
+    len = function(pt)
+        return #flattenpiecetable(pt)
+    end
 }
 
 topiecetable = function(t)
@@ -47,6 +63,8 @@ topiecetable = function(t)
     setmetatable(pt, mt)
     pt.sub = api.sub
     pt.flatten = api.flatten
+    pt.get = api.get
+    pt.len = api.len
     return pt
 end
 
@@ -56,8 +74,6 @@ flattenpiecetable = function(pt)
         for j = 1, v.length do
             table.insert(t, v.data[v.offset + j - 1])
         end
---        table.insert(data, table.concat(v.data, ", ", v.offset,
---                                        v.offset + v.length - 1))
     end
     return t
 end
