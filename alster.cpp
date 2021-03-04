@@ -160,8 +160,6 @@ int main(int argc, char* argv[]) {
     lua_getfield(L, -1, "flattenpiecetable");
     lua_setglobal(L, "flattenpiecetable");
     lua_pop(L, 1);
-    assert(luaL_dofile(L, "lua/inspect.lua") == 0);
-    lua_setglobal(L, "inspect");
 
     // create buffer
     lua_getglobal(L, "topiecetable");

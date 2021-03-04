@@ -1,3 +1,5 @@
+local inspect = require 'inspect'
+
 MODE_NORMAL = 0
 MODE_INSERT = 1
 
