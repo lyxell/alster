@@ -87,7 +87,7 @@ std::string window_to_string(window w) {
 window window_update_cursor(window w, const buffer& buf, size_t scroll) {
     w.cursor.y = buf.pos.y - scroll;
     w.cursor.x = std::min(
-                   std::min(buf.pos.x, buf.lines[buf.pos.y-1].size()),
+                   std::min(buf.pos.x, buf.lines[buf.pos.y-1].size() + 1),
                    w.width - 1);
     return w;
 }

@@ -53,6 +53,12 @@ bindings = {
         ["l"] = function(state)
             return {x = math.min(#state.buffer:get(state.y) + 1, state.x + 1)}
         end,
+        ["A"] = function(state)
+            return {
+                x = #state.buffer:get(state.y) + 1,
+                mode = MODE_INSERT
+            }
+        end,
         ["gg"] = function(state)
             return {x = 1, y = 1}
         end,
