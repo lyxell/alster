@@ -7,19 +7,28 @@ KEY_ESCAPE = "\27"
 history = {
     undodata = {},
     redodata = {},
-    redo = function(history)
+    redo = function(history, ...)
+        assert(#history.redodata > 0)
+        local value = history.redodata[#history.redodata]
+        table.insert(history.undodata, arg)
+        table.remove(history.redodata)
+        return unpack(value)
     end,
-    undo = function(history)
+    undo = function(history, ...)
         assert(#history.undodata > 0)
         local value = history.undodata[#history.undodata]
+        table.insert(history.redodata, arg)
         table.remove(history.undodata)
-        return value
+        return unpack(value)
     end,
-    save = function(history, value)
-        table.insert(history.undodata, value)
+    save = function(history, ...)
+        table.insert(history.undodata, arg)
     end,
-    empty = function(history)
-        return #history.undodata == 0
+    canundo = function(history)
+        return #history.undodata > 0
+    end,
+    canredo = function(history)
+        return #history.redodata > 0
     end
 }
 
@@ -54,6 +63,8 @@ bindings = {
             return {x = math.min(#state.buffer:get(state.y) + 1, state.x + 1)}
         end,
         ["A"] = function(state)
+            local b, x, y = state.buffer, state.x, state.y
+            history:save(b, x, y)
             return {
                 x = #state.buffer:get(state.y) + 1,
                 mode = MODE_INSERT
@@ -71,27 +82,54 @@ bindings = {
         ["$"] = function(state)
             return {x = #state.buffer:get(state.y) + 1}
         end,
+        ["o"] = function(state)
+            local b, x, y = state.buffer, state.x, state.y
+            history:save(b, x, y)
+            return {
+                buffer = b:sub(1, y) .. {""} .. b:sub(y + 1),
+                x = 1,
+                y = y + 1,
+                mode = MODE_INSERT
+            }
+        end,
         ["dd"] = function(state)
             local b, y = state.buffer, state.y
-            history:save(b)
+            history:save(b, x, y)
             return {
                 buffer = b:sub(1, y - 1) .. b:sub(y + 1),
                 y = math.min(y, b:len() - 1)
             }
         end,
         ["i"] = function(state)
+            history:save(state.buffer, state.x, state.y)
             return {
                 mode = MODE_INSERT
             }
         end,
         ["u"] = function(state)
-            if history:empty() then
+            if not history:canundo() then
                 return {
                     status = "History empty"
                 }
             end
+            b, x, y = history:undo(state.buffer, state.x, state.y)
             return {
-                buffer = history:undo()
+                buffer = b,
+                x = x,
+                y = y
+            }
+        end,
+        ["r"] = function(state)
+            if not history:canredo() then
+                return {
+                    status = "Future empty"
+                }
+            end
+            b, x, y = history:redo(state.buffer, state.x, state.y)
+            return {
+                buffer = b,
+                x = x,
+                y = y
             }
         end
     },
