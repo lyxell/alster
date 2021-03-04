@@ -10,19 +10,19 @@ history = {
     redo = function(history, ...)
         assert(#history.redodata > 0)
         local value = history.redodata[#history.redodata]
-        table.insert(history.undodata, arg)
+        table.insert(history.undodata, {...})
         table.remove(history.redodata)
         return unpack(value)
     end,
     undo = function(history, ...)
         assert(#history.undodata > 0)
         local value = history.undodata[#history.undodata]
-        table.insert(history.redodata, arg)
+        table.insert(history.redodata, {...})
         table.remove(history.undodata)
         return unpack(value)
     end,
     save = function(history, ...)
-        table.insert(history.undodata, arg)
+        table.insert(history.undodata, {...})
     end,
     canundo = function(history)
         return #history.undodata > 0
@@ -58,7 +58,7 @@ bindings = {
                 x = x + #insertion
             }
         end,
-        ["q"] = function(state)
+        ["q"] = function()
             return {exiting = true}
         end,
         ["h"] = function(state)
@@ -123,7 +123,7 @@ bindings = {
                     status = "History empty"
                 }
             end
-            b, x, y = history:undo(state.buffer, state.x, state.y)
+            local b, x, y = history:undo(state.buffer, state.x, state.y)
             return {
                 buffer = b,
                 x = x,
@@ -136,7 +136,7 @@ bindings = {
                     status = "Future empty"
                 }
             end
-            b, x, y = history:redo(state.buffer, state.x, state.y)
+            local b, x, y = history:redo(state.buffer, state.x, state.y)
             return {
                 buffer = b,
                 x = x,
@@ -156,7 +156,7 @@ bindings = {
                 y = y + 1
             }
         end,
-        [KEY_ESCAPE] = function(state)
+        [KEY_ESCAPE] = function()
             return {
                 mode = MODE_NORMAL
             }
