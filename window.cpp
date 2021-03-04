@@ -53,8 +53,8 @@ window window_render_visual_selection(window w, buffer_position start,
                                     buffer_position end, size_t scroll) {
     for (size_t y = 0; y < w.height; y++) {
         for (size_t x = 0; x < w.width; x++) {
-            buffer_position curr {x, y + scroll};
-            if (w.matrix[y][x].ch && curr >= start && curr <= end) {
+            auto curr = std::pair(x, y + scroll);
+            if (w.matrix[y][x].ch && curr >= std::pair(start.x, start.y) && curr <= std::pair(end.x, end.y)) {
                 w.matrix[y][x].bg = COLOR_BRIGHT_BLACK_BG;
             }
         }
