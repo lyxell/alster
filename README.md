@@ -1,5 +1,6 @@
 ## TODO before first release
 
+* The command line should feel like Chrome developer tools
 * Binding to execute buffer in lua
 * Search
 * Command line
