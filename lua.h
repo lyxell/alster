@@ -9,6 +9,3 @@ int lua_line_sub(lua_State *L);
 int lua_line_eq(lua_State *L);
 int lua_line_char(lua_State *L);
 int lua_line_concat(lua_State *L);
-int lua_buffer_sub(lua_State *L);
-int lua_buffer_len(lua_State *L);
-int lua_buffer_concat(lua_State *L);

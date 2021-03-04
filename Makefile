@@ -13,7 +13,6 @@ build/alster: \
 	build/syntax/c_re2c.o \
 	build/syntax/c_string_re2c.o \
 	build/window_re2c.o \
-	build/unicode_re2c.o \
 	build/file.o \
 	file.h \
 	build/tty.o \
@@ -26,7 +25,6 @@ build/alster: \
 		build/utf8.o \
 		build/editor.o \
 		build/tty.o \
-		build/unicode_re2c.o \
 		build/syntax/c_re2c.o \
 		build/syntax/c_string_re2c.o \
 		build/window_re2c.o \
