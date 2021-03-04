@@ -1,5 +1,6 @@
 ## TODO before first release
 
+* Binding to execute buffer in lua
 * Search
 * Command line
 * Visual mode
