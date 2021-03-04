@@ -66,10 +66,10 @@ static void push_state(lua_State *L, const editor& e, int BUFFER_REFERENCE) {
     lua_settable(L, -3);
     // position
     lua_pushstring(L, "x");
-    lua_pushinteger(L, e.buf.pos.x);
+    lua_pushinteger(L, e.pos.x);
     lua_settable(L, -3);
     lua_pushstring(L, "y");
-    lua_pushinteger(L, e.buf.pos.y);
+    lua_pushinteger(L, e.pos.y);
     lua_settable(L, -3);
     // mode
     lua_pushstring(L, "mode");
@@ -94,7 +94,7 @@ static void read_state(lua_State *L, editor& e, int BUFFER_REFERENCE) {
                 ls.push_back(utf8_decode(std::string(lua_tolstring(L, -1, NULL))));
                 lua_pop(L, 1);
             }
-            e.buf.lines = ls;
+            e.lines = ls;
             lua_pop(L, 1); // pop table of strings
             lua_rawseti(L, LUA_REGISTRYINDEX, BUFFER_REFERENCE); // pops buffer
         } else {
@@ -104,14 +104,14 @@ static void read_state(lua_State *L, editor& e, int BUFFER_REFERENCE) {
     {
         lua_getfield(L, -1, "x");
         if (!lua_isnil(L, -1)) {
-            e.buf.pos.x = lua_tointeger(L, -1);
+            e.pos.x = lua_tointeger(L, -1);
         }
         lua_pop(L, 1);
     }
     {
         lua_getfield(L, -1, "y");
         if (!lua_isnil(L, -1)) {
-            e.buf.pos.y = lua_tointeger(L, -1);
+            e.pos.y = lua_tointeger(L, -1);
         }
         lua_pop(L, 1);
     }
@@ -143,14 +143,14 @@ int main(int argc, char* argv[]) {
     // end load functions -->
 
     if (argc > 1) {
-        e.buf = file_load(argv[1]);
+        e.lines = file_load(argv[1]);
         e.filename = argv[1];
     } else {
-        e.buf = {{utf8_decode(std::string("hello"))}, {0, 0}};
+        e.lines = {{utf8_decode(std::string("hello"))}, {0, 0}};
         e.filename = "/tmp/alster.tmp";
     }
-    e.buf.pos.x = 1;
-    e.buf.pos.y = 1;
+    e.pos.x = 1;
+    e.pos.y = 1;
     assert(tty_enable_raw_mode() == 0);
 
     // load aux libs
@@ -165,7 +165,7 @@ int main(int argc, char* argv[]) {
     lua_getglobal(L, "topiecetable");
     lua_newtable(L);
     long int i = 1;
-    for (auto l : e.buf.lines) {
+    for (auto l : e.lines) {
         lua_pushinteger(L, i);
         lua_pushstring(L, utf8_encode(l).c_str());
         lua_settable(L, -3);
@@ -229,7 +229,7 @@ int main(int argc, char* argv[]) {
             }
         }
         if (e.saving) {
-            file_save(e.filename, e.buf);
+            file_save(e.filename, e.lines);
             sprintf(e.status, "Saving %s", e.filename);
         }
         t.report("handle cmd:");

@@ -32,11 +32,11 @@ int token_to_color(int t) {
     return COLOR_RESET;
 }
 
-window window_render_buffer(window w, const buffer& buf, size_t scroll) {
+window window_render_buffer(window w, const std::vector<buffer_line>& lines, size_t scroll) {
     for (size_t y = 0; y < w.height; y++) {
-        if (y + scroll >= buf.lines.size()) continue;
+        if (y + scroll >= lines.size()) continue;
         size_t x = 0;
-        for (auto [s, e, t] : tokenize_c(buf.lines[y + scroll].c_str())) {
+        for (auto [s, e, t] : tokenize_c(lines[y + scroll].c_str())) {
             for (auto ch : std::u32string(s, e)) {
                 if (x < w.width) {
                     w.matrix[y][x].ch = ch;
@@ -84,10 +84,11 @@ std::string window_to_string(window w) {
     return str;
 }
 
-window window_update_cursor(window w, const buffer& buf, size_t scroll) {
-    w.cursor.y = buf.pos.y - scroll;
+window window_update_cursor(window w, const std::vector<buffer_line>& lines,
+                            buffer_position pos, size_t scroll) {
+    w.cursor.y = pos.y - scroll;
     w.cursor.x = std::min(
-                   std::min(buf.pos.x, buf.lines[buf.pos.y-1].size() + 1),
+                   std::min(pos.x, lines[pos.y-1].size() + 1),
                    w.width - 1);
     return w;
 }

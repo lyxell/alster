@@ -27,8 +27,8 @@ struct window {
 };
 
 window window_update_size(window);
-window window_render_buffer(window, const buffer&, size_t scroll);
+window window_render_buffer(window, const std::vector<buffer_line>&, size_t scroll);
 window window_render_visual_selection(window w, buffer_position start,
                                     buffer_position end, size_t scroll);
-window window_update_cursor(window, const buffer& buf, size_t scroll);
+window window_update_cursor(window, const std::vector<buffer_line>&, buffer_position, size_t);
 std::string window_to_string(window);

@@ -31,8 +31,3 @@ struct buffer_position {
 using buffer_char = char32_t;
 using buffer_line = std::u32string;
 
-struct buffer {
-    std::vector<buffer_line> lines;
-    buffer_position pos;
-};
-

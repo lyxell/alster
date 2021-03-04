@@ -14,7 +14,8 @@ struct editor {
     std::u32string cmd;
     long int mode;
     char status[120];
-    buffer buf;
+    buffer_position pos;
+    std::vector<buffer_line> lines;
     bool exiting;
     bool saving;
     size_t scroll;

@@ -4,7 +4,7 @@
 #include "file.h"
 #include "utf8.h"
 
-buffer file_load(const char* filename) {
+std::vector<buffer_line> file_load(const char* filename) {
     std::ifstream t(filename);
     std::string str((std::istreambuf_iterator<char>(t)),
                      std::istreambuf_iterator<char>());
@@ -18,12 +18,12 @@ buffer file_load(const char* filename) {
             line.push_back(c);
         }
     }
-    return {std::move(lines), {0, 0}};
+    return lines;
 }
 
-void file_save(const char* filename, const buffer& buf) {
+void file_save(const char* filename, const std::vector<buffer_line>& lines) {
     std::ofstream out(filename);
-    for (auto line : buf.lines) {
+    for (auto line : lines) {
         out << utf8_encode(line);
         out << '\n';
     }
