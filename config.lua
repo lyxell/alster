@@ -1,3 +1,9 @@
+MODE_NORMAL = 0
+MODE_INSERT = 1
+
+KEY_BACKSPACE = "\127"
+KEY_ESCAPE = "\27"
+
 history = {
     undodata = {},
     redodata = {},
@@ -17,12 +23,18 @@ history = {
     end
 }
 
-oninsert = function(state, str)
-    local b, y = state.buffer, state.y
-    return {
-        buffer = b:sub(1, y - 1) .. topiecetable({"x"}) .. b:sub(y + 1)
-    }
-end
+events = {
+    insert = function(state, str)
+        local b, y, x = state.buffer, state.y, state.x
+        local line = b:get(y)
+        return {
+            buffer = b:sub(1, y - 1) ..
+                     topiecetable({line:sub(1, x - 1) .. str .. line:sub(x)}) ..
+                     b:sub(y + 1),
+            x = x + #str
+        }
+    end
+}
 
 bindings = {
     normal = {
@@ -41,6 +53,12 @@ bindings = {
         ["l"] = function(state)
             return {x = math.min(#state.buffer:get(state.y), state.x + 1)}
         end,
+        ["gg"] = function(state)
+            return {x = 1, y = 1}
+        end,
+        ["G"] = function(state)
+            return {x = 1, y = state.buffer:len()}
+        end,
         ["dd"] = function(state)
             local b, y = state.buffer, state.y
             history:save(b)
@@ -49,11 +67,11 @@ bindings = {
                 buffer = b .. b
             }
         end,
---        ["i"] = function(state)
---            return {
---                mode = "insert"
---            }
---        end,
+        ["i"] = function(state)
+            return {
+                mode = MODE_INSERT
+            }
+        end,
         ["u"] = function(state)
             if history:empty() then
                 return {
@@ -63,6 +81,46 @@ bindings = {
             return {
                 buffer = history:undo()
             }
+        end
+    },
+    insert = {
+        ["\r"] = function(state)
+            local b, x, y = state.buffer, state.x, state.y
+            local line = b:get(y)
+            return {
+                buffer = b:sub(1, y - 1) ..
+                         topiecetable({line:sub(1, x - 1), line:sub(x)}) ..
+                         b:sub(y + 1),
+                x = 1,
+                y = y + 1
+            }
+        end,
+        [KEY_ESCAPE] = function(state)
+            return {
+                mode = MODE_NORMAL
+            }
+        end,
+        [KEY_BACKSPACE] = function(state)
+            local b, x, y, l = state.buffer, state.x, state.y
+            local l = b:get(y)
+            if x > 1 then
+                return {
+                    buffer = b:sub(1, y - 1) ..
+                             topiecetable({l:sub(1, x - 2) .. l:sub(x)}) ..
+                             b:sub(y + 1),
+                    x = x - 1
+                }
+            elseif y > 1 then
+                return {
+                    y = y - 1,
+                    x = #b:get(y - 1) + 1,
+                    buffer = b:sub(1, y - 2) ..
+                             topiecetable({b:get(y - 1) .. b:get(y)}) ..
+                             b:sub(y + 1)
+                }
+            else
+                return {}
+            end
         end
     }
 }

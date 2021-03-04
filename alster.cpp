@@ -126,6 +126,13 @@ static void read_state(lua_State *L, editor& e, int BUFFER_REFERENCE) {
         }
         lua_pop(L, 1);
     }
+    {
+        lua_getfield(L, -1, "mode");
+        if (!lua_isnil(L, -1)) {
+            e.mode = lua_tointeger(L, -1);
+        }
+        lua_pop(L, 1);
+    }
     lua_pop(L, 1);
 }
 
@@ -166,7 +173,6 @@ int main(int argc, char* argv[]) {
     
     // load config
     assert(luaL_dofile(L, "config.lua") == 0);
-    auto bindings = get_bindings(L, "normal");
 
     while (true) {
         win = editor_draw(e, win);
@@ -175,27 +181,49 @@ int main(int argc, char* argv[]) {
         e.cmd.push_back(utf8_getchar());
         t.start();
         // handle command if match
-        if (e.cmd[0] == 'i') {
-            lua_getglobal(L, "oninsert");
-            push_state(L, e, BUFFER_REFERENCE);
-            lua_pushstring(L, utf8_encode(e.cmd).c_str());
-            lua_call(L, 2, 1);
-            read_state(L, e, BUFFER_REFERENCE);
-            e.cmd = {};
-        }
-        if (bindings.find(e.cmd) != bindings.end()) {
-            lua_getglobal(L, "bindings");
-            lua_getfield(L, -1, e.mode == MODE_NORMAL ? "normal" : "insert");
-            lua_getfield(L, -1, utf8_encode(e.cmd).c_str());
-            assert(lua_isfunction(L, -1));
-            push_state(L, e, BUFFER_REFERENCE);
-            lua_call(L, 1, 1);
-            read_state(L, e, BUFFER_REFERENCE);
-            e.cmd = {};
-        }
-        // check if e.cmd is a prefix of some command, otherwise clear cmd
-        if (bindings.upper_bound(e.cmd) == bindings.end() || bindings.upper_bound(e.cmd)->find(e.cmd) != 0) {
-            e.cmd = {};
+        if (e.mode == MODE_NORMAL) {
+            auto bindings = get_bindings(L, "normal");
+            if (bindings.find(e.cmd) != bindings.end()) {
+                lua_getglobal(L, "bindings");
+                lua_getfield(L, -1, "normal");
+                lua_getfield(L, -1, utf8_encode(e.cmd).c_str());
+                assert(lua_isfunction(L, -1));
+                push_state(L, e, BUFFER_REFERENCE);
+                lua_call(L, 1, 1);
+                read_state(L, e, BUFFER_REFERENCE);
+                e.cmd = {};
+                lua_pop(L, 1);
+                lua_pop(L, 1);
+            }
+            // check if e.cmd is a prefix of some command, otherwise clear cmd
+            if (bindings.upper_bound(e.cmd) == bindings.end() || bindings.upper_bound(e.cmd)->find(e.cmd) != 0) {
+                e.cmd = {};
+            }
+        } else if (e.mode == MODE_INSERT) {
+            auto bindings = get_bindings(L, "insert");
+            if (bindings.find(e.cmd) != bindings.end()) {
+                lua_getglobal(L, "bindings");
+                lua_getfield(L, -1, "insert");
+                lua_getfield(L, -1, utf8_encode(e.cmd).c_str());
+                assert(lua_isfunction(L, -1));
+                push_state(L, e, BUFFER_REFERENCE);
+                lua_call(L, 1, 1);
+                read_state(L, e, BUFFER_REFERENCE);
+                e.cmd = {};
+                lua_pop(L, 1);
+                lua_pop(L, 1);
+            }
+            // check if e.cmd is a prefix of some command, otherwise insert cmd
+            if (bindings.upper_bound(e.cmd) == bindings.end() || bindings.upper_bound(e.cmd)->find(e.cmd) != 0) {
+                lua_getglobal(L, "events");
+                lua_getfield(L, -1, "insert");
+                push_state(L, e, BUFFER_REFERENCE);
+                lua_pushstring(L, utf8_encode(e.cmd).c_str());
+                lua_call(L, 2, 1);
+                read_state(L, e, BUFFER_REFERENCE);
+                e.cmd = {};
+                lua_pop(L, 1);
+            }
         }
         if (e.saving) {
             file_save(e.filename, e.buf);

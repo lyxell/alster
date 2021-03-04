@@ -12,7 +12,7 @@ enum {
 
 struct editor {
     std::u32string cmd;
-    int mode;
+    long int mode;
     char status[120];
     buffer buf;
     std::vector<buffer> history;
