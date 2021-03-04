@@ -1,6 +1,12 @@
 local mt = {
     __concat = function(lhs, rhs)
         result = topiecetable({})
+        if not lhs.ptrs then
+            lhs = topiecetable(lhs)
+        end
+        if not rhs.ptrs then
+            rhs = topiecetable(rhs)
+        end
         for i, v in ipairs(lhs.ptrs) do
             table.insert(result.ptrs, v)
         end
@@ -52,6 +58,9 @@ local api = {
     end,
     len = function(pt)
         return #flattenpiecetable(pt)
+    end,
+    join = function(pt)
+        return table.concat(flattenpiecetable(pt))
     end
 }
 
@@ -65,6 +74,7 @@ topiecetable = function(t)
     pt.flatten = api.flatten
     pt.get = api.get
     pt.len = api.len
+    pt.join = api.join
     return pt
 end
 

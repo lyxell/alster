@@ -24,14 +24,14 @@ history = {
 }
 
 events = {
-    insert = function(state, str)
-        local b, y, x = state.buffer, state.y, state.x
+    insert = function(state, insertion)
+        local b, x, y = state.buffer, state.x, state.y
         local line = b:get(y)
         return {
-            buffer = b:sub(1, y - 1) ..
-                     topiecetable({line:sub(1, x - 1) .. str .. line:sub(x)}) ..
-                     b:sub(y + 1),
-            x = x + #str
+            buffer = b:sub(1, y - 1)
+                  .. {line:sub(1, x - 1) .. insertion .. line:sub(x)}
+                  .. b:sub(y + 1),
+            x = x + #insertion
         }
     end
 }
@@ -51,7 +51,7 @@ bindings = {
             return {y = math.max(state.y - 1, 1)}
         end,
         ["l"] = function(state)
-            return {x = math.min(#state.buffer:get(state.y), state.x + 1)}
+            return {x = math.min(#state.buffer:get(state.y) + 1, state.x + 1)}
         end,
         ["gg"] = function(state)
             return {x = 1, y = 1}
@@ -59,12 +59,18 @@ bindings = {
         ["G"] = function(state)
             return {x = 1, y = state.buffer:len()}
         end,
+        ["0"] = function(state)
+            return {x = 1}
+        end,
+        ["$"] = function(state)
+            return {x = #state.buffer:get(state.y) + 1}
+        end,
         ["dd"] = function(state)
             local b, y = state.buffer, state.y
             history:save(b)
             return {
---                buffer = b:sub(1, y - 1) .. b:sub(y + 1)
-                buffer = b .. b
+                buffer = b:sub(1, y - 1) .. b:sub(y + 1),
+                y = math.min(y, b:len() - 1)
             }
         end,
         ["i"] = function(state)
@@ -86,10 +92,10 @@ bindings = {
     insert = {
         ["\r"] = function(state)
             local b, x, y = state.buffer, state.x, state.y
-            local line = b:get(y)
+            local l = b:get(y)
             return {
                 buffer = b:sub(1, y - 1) ..
-                         topiecetable({line:sub(1, x - 1), line:sub(x)}) ..
+                         {l:sub(1, x - 1), l:sub(x)} ..
                          b:sub(y + 1),
                 x = 1,
                 y = y + 1
@@ -101,26 +107,24 @@ bindings = {
             }
         end,
         [KEY_BACKSPACE] = function(state)
-            local b, x, y, l = state.buffer, state.x, state.y
-            local l = b:get(y)
+            local b, x, y = state.buffer, state.x, state.y
             if x > 1 then
                 return {
-                    buffer = b:sub(1, y - 1) ..
-                             topiecetable({l:sub(1, x - 2) .. l:sub(x)}) ..
-                             b:sub(y + 1),
+                    buffer = b:sub(1, y - 1)
+                          .. {b:get(y):sub(1, x - 2) .. b:get(y):sub(x)}
+                          .. b:sub(y + 1),
                     x = x - 1
                 }
             elseif y > 1 then
                 return {
                     y = y - 1,
                     x = #b:get(y - 1) + 1,
-                    buffer = b:sub(1, y - 2) ..
-                             topiecetable({b:get(y - 1) .. b:get(y)}) ..
-                             b:sub(y + 1)
+                    buffer = b:sub(1, y - 2)
+                          .. {b:sub(y - 1, y):join()}
+                          .. b:sub(y + 1)
                 }
-            else
-                return {}
             end
+            return {}
         end
     }
 }
