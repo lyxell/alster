@@ -36,7 +36,7 @@ int main() {
     };
     for (auto [l, r] : test_cases) {
         editor e {};
-        e.buf = {{std::make_shared<buffer_line>()}, {0, 0}};
+        e.buf = {{buffer_line()}, {0, 0}};
         e.mode = MODE_NORMAL;
         for (auto ch : l) {
             e.cmd.push_back(ch);

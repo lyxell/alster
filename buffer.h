@@ -3,7 +3,7 @@
 #include <string>
 #include <memory>
 #include <vector>
-#include <stdlib.h>
+#include <cstdlib>
 
 struct buffer_position {
     size_t x;
@@ -30,14 +30,9 @@ struct buffer_position {
 
 using buffer_char = char32_t;
 using buffer_line = std::u32string;
-using buffer_lines = std::vector<std::shared_ptr<buffer_line>>;
 
 struct buffer {
-    buffer_lines lines;
+    std::vector<buffer_line> lines;
     buffer_position pos;
 };
 
-struct buf {
-    size_t num_lines;
-    const buffer_char* lines[];
-};

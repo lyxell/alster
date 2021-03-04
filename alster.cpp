@@ -89,13 +89,13 @@ static void read_state(lua_State *L, editor& e, int BUFFER_REFERENCE) {
             // now there is a table of strings on the stack
             assert(lua_istable(L, -1));
             // traverse table of strings
-            buffer_lines ls = {};
+            std::vector<buffer_line> ls = {};
             lua_pushnil(L);
             while (lua_next(L, -2) != 0) {
                 std::u32string str;
                 for (auto c : std::string(lua_tolstring(L, -1, NULL)))
                     str.push_back(c);
-                ls.push_back(std::make_shared<buffer_line>(str));
+                ls.push_back(str);
                 lua_pop(L, 1);
             }
             e.buf.lines = ls;
@@ -152,7 +152,7 @@ int main(int argc, char* argv[]) {
         e.buf = file_load(argv[1]);
         e.filename = argv[1];
     } else {
-        e.buf = {{std::make_shared<buffer_line>()}, {0, 0}};
+        e.buf = {{buffer_line()}, {0, 0}};
         e.filename = "/tmp/alster.tmp";
     }
     e.buf.pos.x = 1;

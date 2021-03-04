@@ -8,11 +8,11 @@ buffer file_load(const char* filename) {
     std::ifstream t(filename);
     std::string str((std::istreambuf_iterator<char>(t)),
                      std::istreambuf_iterator<char>());
-    buffer_lines lines;
+    std::vector<buffer_line> lines;
     buffer_line line;
     for (char32_t c : utf8_decode(str)) {
         if (c == '\n') {
-            lines.push_back(std::make_shared<buffer_line>(std::move(line)));
+            lines.push_back(std::move(line));
             line.clear();
         } else {
             line.push_back(c);
@@ -24,7 +24,7 @@ buffer file_load(const char* filename) {
 void file_save(const char* filename, const buffer& buf) {
     std::ofstream out(filename);
     for (auto line : buf.lines) {
-        out << utf8_encode(*line);
+        out << utf8_encode(line);
         out << '\n';
     }
     out.close();

@@ -36,7 +36,7 @@ window window_render_buffer(window w, const buffer& buf, size_t scroll) {
     for (size_t y = 0; y < w.height; y++) {
         if (y + scroll >= buf.lines.size()) continue;
         size_t x = 0;
-        for (auto [s, e, t] : tokenize_c(buf.lines[y + scroll]->c_str())) {
+        for (auto [s, e, t] : tokenize_c(buf.lines[y + scroll].c_str())) {
             for (auto ch : std::u32string(s, e)) {
                 if (x < w.width) {
                     w.matrix[y][x].ch = ch;
@@ -87,7 +87,7 @@ std::string window_to_string(window w) {
 window window_update_cursor(window w, const buffer& buf, size_t scroll) {
     w.cursor.y = buf.pos.y - scroll;
     w.cursor.x = std::min(
-                   std::min(buf.pos.x, buf.lines[buf.pos.y-1]->size()),
+                   std::min(buf.pos.x, buf.lines[buf.pos.y-1].size()),
                    w.width - 1);
     return w;
 }
