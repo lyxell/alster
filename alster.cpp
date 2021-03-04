@@ -140,8 +140,6 @@ int main(int argc, char* argv[]) {
     timer t {};
     window win {};
 
-    e.scroll = 0;
-
     // <-- load functions
     auto L = luaL_newstate();
     luaL_openlibs(L);
