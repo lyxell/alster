@@ -6,6 +6,8 @@ CXXFLAGS=-std=c++17 \
 		 -Wconversion \
 		 -Wfatal-errors
 
+CFLAGS=-std=c99 -g -O2 -Wall
+
 build/alster: \
 	build/alster.o \
 	buffer.h \
@@ -32,6 +34,10 @@ build/alster: \
 build/%.o: %.cpp
 	mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) -I. $< -c -o $@
+
+build/%.o: %.c
+	mkdir -p $(@D)
+	$(CC) $(CFLAGS) -I. $< -c -o $@
 
 build/%.o: build/%.cpp
 	mkdir -p $(@D)
