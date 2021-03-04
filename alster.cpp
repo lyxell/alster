@@ -155,6 +155,11 @@ int main(int argc, char* argv[]) {
 
     // load aux libs
     assert(luaL_dofile(L, "lua/piecetable.lua") == 0);
+    lua_getfield(L, -1, "topiecetable");
+    lua_setglobal(L, "topiecetable");
+    lua_getfield(L, -1, "flattenpiecetable");
+    lua_setglobal(L, "flattenpiecetable");
+    lua_pop(L, 1);
     assert(luaL_dofile(L, "lua/inspect.lua") == 0);
     lua_setglobal(L, "inspect");
 
