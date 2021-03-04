@@ -16,12 +16,10 @@ build/alster: \
 	build/file.o \
 	file.h \
 	build/tty.o \
-	build/lua.o \
 	build/utf8.o
 	mkdir -p build
 	$(CXX) \
 		build/alster.o \
-		build/lua.o \
 		build/utf8.o \
 		build/editor.o \
 		build/tty.o \

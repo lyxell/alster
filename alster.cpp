@@ -7,7 +7,6 @@
 #include <lua5.1/lauxlib.h>
 #include <lua5.1/lualib.h>
 
-#include "lua.h"
 #include "buffer.h"
 #include "editor.h"
 #include "file.h"
