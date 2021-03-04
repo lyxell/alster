@@ -1,6 +1,18 @@
+## TODO before first release
+
+* Search
+* Command line
+* Visual mode
+* Auto-indent
+* Auto-bracket insertion
+* More lexers
+* Open/save
+* Multiple buffers
+
 ## Packages
 
 Maybe autoindentation should be a package?
+Maybe history could be as well
 
 ## Most notable features
 
