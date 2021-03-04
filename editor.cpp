@@ -12,12 +12,6 @@ window editor_draw(editor& e, window old) {
     }
     win = window_update_cursor(win, e.buf, e.scroll);
     win = window_render_buffer(win, e.buf, e.scroll);
-    if (e.visual_marker) {
-        auto start = *e.visual_marker;
-        auto end = e.buf.pos;
-        if (start > end) std::swap(start, end);
-        win = window_render_visual_selection(win, start, end, e.scroll);
-    }
     if (e.mode == MODE_INSERT) {
         printf("\x1b[6 q");
     } else {
