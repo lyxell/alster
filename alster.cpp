@@ -91,10 +91,7 @@ static void read_state(lua_State *L, editor& e, int BUFFER_REFERENCE) {
             std::vector<buffer_line> ls = {};
             lua_pushnil(L);
             while (lua_next(L, -2) != 0) {
-                std::u32string str;
-                for (auto c : std::string(lua_tolstring(L, -1, NULL)))
-                    str.push_back(c);
-                ls.push_back(str);
+                ls.push_back(utf8_decode(std::string(lua_tolstring(L, -1, NULL))));
                 lua_pop(L, 1);
             }
             e.buf.lines = ls;
@@ -149,7 +146,7 @@ int main(int argc, char* argv[]) {
         e.buf = file_load(argv[1]);
         e.filename = argv[1];
     } else {
-        e.buf = {{buffer_line()}, {0, 0}};
+        e.buf = {{utf8_decode(std::string("hello"))}, {0, 0}};
         e.filename = "/tmp/alster.tmp";
     }
     e.buf.pos.x = 1;
@@ -162,9 +159,13 @@ int main(int argc, char* argv[]) {
     // create buffer
     lua_getglobal(L, "topiecetable");
     lua_newtable(L);
-    lua_pushinteger(L, 1);
-    lua_pushstring(L, "hello world");
-    lua_settable(L, -3);
+    long int i = 1;
+    for (auto l : e.buf.lines) {
+        lua_pushinteger(L, i);
+        lua_pushstring(L, utf8_encode(l).c_str());
+        lua_settable(L, -3);
+        i++;
+    }
     lua_call(L, 1, 1);
     const int BUFFER_REFERENCE = luaL_ref(L, LUA_REGISTRYINDEX);
     
