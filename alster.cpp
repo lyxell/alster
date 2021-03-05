@@ -117,16 +117,10 @@ int main(int argc, char* argv[]) {
                 lua_pop(L, 1); // pop bindings
             }
             // check if e.cmd is a prefix of some command, otherwise insert cmd
-            if (bindings.upper_bound(e.cmd) == bindings.end() || bindings.upper_bound(e.cmd)->find(e.cmd) != 0) {
-                lua_getglobal(L, "events");
-                lua_getfield(L, -1, "insert");
-                assert(lua_isfunction(L, -1));
-                lua_push_state(L);
-                lua_pushstring(L, utf8_encode(e.cmd).c_str());
-                lua_call(L, 2, 1);
-                lua_update_state(L);
+            if (bindings.upper_bound(e.cmd) == bindings.end() ||
+                bindings.upper_bound(e.cmd)->find(e.cmd) != 0) {
+                lua_event_insert(L, utf8_encode(e.cmd).c_str());
                 e.cmd = {};
-                lua_pop(L, 1); // pop events
             }
         }
         lua_state_to_editor(L, e);

@@ -132,3 +132,14 @@ void lua_state_to_editor(lua_State* L, editor& e) {
     lua_pop(L, 1);
 
 }
+
+void lua_event_insert(lua_State* L, const char* str) {
+    lua_getglobal(L, "events");
+    lua_getfield(L, -1, "insert");
+    assert(lua_isfunction(L, -1));
+    lua_push_state(L);
+    lua_pushstring(L, str);
+    lua_call(L, 2, 1);
+    lua_update_state(L);
+    lua_pop(L, 1);
+}
