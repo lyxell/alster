@@ -1,12 +1,12 @@
 local inspect = require 'inspect'
 
-MODE_NORMAL = 0
-MODE_INSERT = 1
+local MODE_NORMAL = 0
+local MODE_INSERT = 1
 
-KEY_BACKSPACE = "\127"
-KEY_ESCAPE = "\27"
+local KEY_BACKSPACE = "\127"
+local KEY_ESCAPE = "\27"
 
-history = {
+local history = {
     undodata = {},
     redodata = {},
     redo = function(history, ...)
