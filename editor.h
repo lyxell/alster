@@ -11,7 +11,7 @@ enum {
 };
 
 struct editor {
-    std::u32string cmd;
+    std::string cmd;
     long int mode;
     char status[120];
     buffer_position pos;
