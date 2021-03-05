@@ -10,14 +10,16 @@ window editor_draw(editor& e, window old) {
     } else if (e.pos.y - 1 >= e.scroll + win.height) {
         e.scroll = e.pos.y - win.height;
     }
-    win = window_update_cursor(win, e.lines, e.pos, e.scroll);
-    win = window_render_buffer(win, e.lines, e.scroll);
+    window_update_cursor(&win, e.lines, e.pos, e.scroll);
+    window_render_buffer(&win, e.lines, e.scroll);
     if (e.mode == MODE_INSERT) {
         printf("\x1b[6 q");
     } else {
         printf("\x1b[2 q");
     }
-    printf("%s", window_to_string(win).c_str());
+    static char buffer[30000];
+    window_to_string(&win, buffer);
+    printf("%s", buffer);
     return win;
 }
 

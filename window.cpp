@@ -1,12 +1,11 @@
 #include "colors.h"
 #include "syntax/syntax.h"
-#include "utf8.h"
 #include "window.h"
-#include <cassert>
-#include <cstring>
+#include <assert.h>
+#include <string.h>
 #include <sys/ioctl.h>
 
-int token_to_color(int t) {
+static int token_to_color(int t) {
     switch (t) {
         case C_PUNCTUATOR:
         case C_SINGLE_LINE_COMMENT:
@@ -32,69 +31,50 @@ int token_to_color(int t) {
     return COLOR_RESET;
 }
 
-window window_render_buffer(window w,
+void window_render_buffer(window* w,
                             const std::vector<buffer_line>& lines,
                             size_t scroll) {
-    memset(w.matrix, 0, sizeof(w.matrix));
-    for (size_t y = 0; y < w.height; y++) {
+    memset(w->matrix, 0, sizeof(w->matrix));
+    for (size_t y = 0; y < w->height; y++) {
         if (y + scroll >= lines.size()) continue;
         size_t x = 0;
         for (auto [s, e, t] : tokenize_c(lines[y + scroll].c_str())) {
             for (auto ch : std::u32string(s, e)) {
-                if (x < w.width) {
-                    w.matrix[y][x].ch = ch;
-                    w.matrix[y][x].fg = token_to_color(t);
+                if (x < w->width) {
+                    w->matrix[y][x].ch = ch;
+                    w->matrix[y][x].fg = token_to_color(t);
                 }
                 x++;
             }
         }
     }
-    return w;
 }
 
-window window_render_visual_selection(window w, buffer_position start,
-                                    buffer_position end, size_t scroll) {
-    for (size_t y = 0; y < w.height; y++) {
-        for (size_t x = 0; x < w.width; x++) {
-            auto curr = std::pair(x, y + scroll);
-            if (w.matrix[y][x].ch && curr >= std::pair(start.x, start.y)
-                                  && curr <= std::pair(end.x, end.y)) {
-                w.matrix[y][x].bg = COLOR_BRIGHT_BLACK_BG;
-            }
-        }
-    }
-    return w;
-}
-
-std::string window_to_string(window w) {
-    std::string str;
-    for (size_t y = 0; y < w.height; y++) {
-        str += "\x1b[" + std::to_string(y + 1) + ";1H\x1b[K";
-        for (size_t x = 0; x < w.width; x++) {
-            if (w.matrix[y][x].ch) {
-                if (w.matrix[y][x].bg) {
-                    str += "\x1b[" + std::to_string(w.matrix[y][x].fg) + ";"
-                                   + std::to_string(w.matrix[y][x].bg) + "m";
+void window_to_string(const window *w, char* str) {
+    for (size_t y = 0; y < w->height; y++) {
+        str += sprintf(str, "\x1b[%ld;1H\x1b[K", y + 1);
+        for (size_t x = 0; x < w->width; x++) {
+            if (w->matrix[y][x].ch) {
+                if (w->matrix[y][x].bg) {
+                    str += sprintf(str, "\x1b[%d;%dm", w->matrix[y][x].fg, w->matrix[y][x].bg);
                 } else {
-                    str += "\x1b[" + std::to_string(w.matrix[y][x].fg) + "m";
+                    str += sprintf(str, "\x1b[%dm", w->matrix[y][x].fg);
                 }
-                str += utf8_encode(std::u32string(1, w.matrix[y][x].ch));
-                str += "\x1b[0m";
+                char f = (char) w->matrix[y][x].ch;
+                str += sprintf(str, "%c", f);
+                str += sprintf(str, "%s", "\x1b[0m");
             }
         }
     }
-    str += "\x1b[" + std::to_string(w.cursor.y) + ";" +
-                     std::to_string(w.cursor.x) + "H";
-    return str;
+    sprintf(str, "\x1b[%ld;%ldH", w->cursor.y, w->cursor.x);
 }
 
-window window_update_cursor(window w, const std::vector<buffer_line>& lines,
+void window_update_cursor(window *w, const std::vector<buffer_line>& lines,
                             buffer_position pos, size_t scroll) {
-    w.cursor.y = pos.y - scroll;
-    w.cursor.x = std::min(
+    w->cursor.y = pos.y - scroll;
+    w->cursor.x = std::min(
                    std::min(pos.x, lines[pos.y-1].size() + 1),
-                   w.width - 1);
-    return w;
+                   w->width - 1);
 }
 
 window window_update_size(window w) {
