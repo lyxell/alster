@@ -22,10 +22,10 @@ std::vector<buffer_line> file_load(const char* filename) {
 }
 
 void file_save(const char* filename, const std::vector<buffer_line>& lines) {
-    std::ofstream out(filename);
+    FILE *f = fopen(filename, "w");
     for (auto line : lines) {
-        out << utf8_encode(line);
-        out << '\n';
+        fputs(utf8_encode(line).c_str(), f);
+        fputc('\n', f);
     }
-    out.close();
+    fclose(f);
 }

@@ -11,7 +11,6 @@ extern "C" {
 
 #include "buffer.h"
 #include "editor.h"
-#include "file.h"
 #include "tty.h"
 #include "utf8.h"
 #include "window.h"
@@ -139,23 +138,24 @@ int main(int argc, char* argv[]) {
     timer t {};
     window win {};
 
-    // <-- load functions
+    e.filename = argv[1];
+
     auto L = luaL_newstate();
     luaL_openlibs(L);
-    // end load functions -->
 
-    if (argc > 1) {
-        e.lines = file_load(argv[1]);
-        e.filename = argv[1];
-    } else {
-        e.lines = {{utf8_decode(std::string("hello"))}, {0, 0}};
-        e.filename = "/tmp/alster.tmp";
-    }
     e.pos.x = 1;
     e.pos.y = 1;
     assert(tty_enable_raw_mode() == 0);
 
-    // load aux libs
+    // load file api
+    assert(luaL_dofile(L, "lua/file.lua") == 0);
+    lua_getfield(L, -1, "read");
+    const int API_READFILE = luaL_ref(L, LUA_REGISTRYINDEX);
+    lua_getfield(L, -1, "write");
+    const int API_WRITEFILE = luaL_ref(L, LUA_REGISTRYINDEX);
+    lua_pop(L, 1); // pop file api
+
+    // load piecetable libs FIXME
     assert(luaL_dofile(L, "lua/piecetable.lua") == 0);
     lua_getfield(L, -1, "topiecetable");
     lua_setglobal(L, "topiecetable");
@@ -165,19 +165,21 @@ int main(int argc, char* argv[]) {
 
     // create buffer
     lua_getglobal(L, "topiecetable");
-    lua_newtable(L);
-    long int i = 1;
-    for (auto l : e.lines) {
-        lua_pushinteger(L, i);
-        lua_pushstring(L, utf8_encode(l).c_str());
-        lua_settable(L, -3);
-        i++;
+    if (e.filename) {
+        lua_rawgeti(L, LUA_REGISTRYINDEX, API_READFILE);
+        lua_pushstring(L, e.filename);
+        lua_call(L, 1, 1);
+    } else {
+        lua_newtable(L);
     }
     lua_call(L, 1, 1);
     const int BUFFER_REFERENCE = luaL_ref(L, LUA_REGISTRYINDEX);
     
     // load config
     assert(luaL_dofile(L, "config.lua") == 0);
+
+    push_state(L, e, BUFFER_REFERENCE);
+    read_state(L, e, BUFFER_REFERENCE);
 
     while (true) {
         win = editor_draw(e, win);
@@ -231,8 +233,8 @@ int main(int argc, char* argv[]) {
             }
         }
         if (e.saving) {
-            file_save(e.filename, e.lines);
-            sprintf(e.status, "Saving %s", e.filename);
+            //file_save(e.filename, e.lines);
+            //sprintf(e.status, "Saving %s", e.filename);
         }
         t.report("handle cmd:");
         t.start();
