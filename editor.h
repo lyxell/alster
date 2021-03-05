@@ -20,9 +20,7 @@ struct editor {
     bool saving;
     size_t scroll;
     const char* filename;
-    std::set<std::u32string> bindings_normal;
-    std::set<std::u32string> bindings_insert;
 };
 
 editor editor_handle_command(editor e);
-window editor_draw(editor& e, window win);
+window editor_draw(editor& e);

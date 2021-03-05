@@ -2,7 +2,7 @@
 #include "window.h"
 
 // TODO: editor should not be modified
-window editor_draw(editor& e, window old) {
+window editor_draw(editor& e) {
     window win;
     win = window_update_size(win);
     if (e.pos.y - 1 < e.scroll) {

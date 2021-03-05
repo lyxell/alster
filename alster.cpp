@@ -14,7 +14,6 @@ extern "C" {
 #include "editor.h"
 #include "tty.h"
 #include "utf8.h"
-#include "window.h"
 
 struct timer {
     std::chrono::time_point<std::chrono::high_resolution_clock> s;
@@ -65,7 +64,6 @@ int main(int argc, char* argv[]) {
     assert(tty_enable_raw_mode() == 0);
     editor e {};
     timer t {};
-    window win {};
 
     e.filename = argv[1];
 
@@ -78,7 +76,7 @@ int main(int argc, char* argv[]) {
     lua_state_to_editor(L, e);
 
     while (true) {
-        win = editor_draw(e, win);
+        editor_draw(e);
         e.status[0] = '\0';
         t.report("render:    ");
         e.cmd.push_back(utf8_getchar());
