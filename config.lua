@@ -84,13 +84,13 @@ bindings.normal = {
             mode = MODE_INSERT
         }
     end,
-    ["gg"] = function(state)
+    ["gg"] = function()
         return {x = 1, y = 1}
     end,
     ["G"] = function(state)
         return {x = 1, y = state.buffer:len()}
     end,
-    ["0"] = function(state)
+    ["0"] = function()
         return {x = 1}
     end,
     ["$"] = function(state)
@@ -107,7 +107,7 @@ bindings.normal = {
         }
     end,
     ["dd"] = function(state)
-        local b, y = state.buffer, state.y
+        local b, x, y = state.buffer, state.x, state.y
         history:save(b, x, y)
         return {
             buffer = b:sub(1, y - 1) .. b:sub(y + 1),
