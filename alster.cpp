@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
 
     lua_State* L = lua_initialize();
 
-    lua_initialize_state(L, e.filename);
+    lua_load_file(L, e.filename);
     lua_state_to_editor(L, e);
 
     while (true) {

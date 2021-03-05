@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include "utf8.h"
 #include <assert.h>
+#include <string.h>
 
 static int API_READFILE;
 static int API_WRITEFILE;
@@ -18,10 +19,24 @@ lua_State* lua_initialize() {
     lua_State* L = luaL_newstate();
     luaL_openlibs(L);
 
+    // update path
+    lua_getglobal(L, "package");
+    lua_getfield(L, -1, "path");
+    char newpath[300] = {0};
+    strcat(newpath, lua_tostring(L, -1));
+    strcat(newpath, ";");
+    strcat(newpath, "lua/piecetable.lua");
+    lua_pop(L, 1);
+    lua_pushstring(L, newpath);
+    lua_setfield(L, -2, "path");
+    lua_pop(L, 1);
+
     // load misc api
     assert(luaL_dofile(L, "lua/misc.lua") == 0);
     lua_getfield(L, -1, "mergestates");
     API_MERGESTATES = luaL_ref(L, LUA_REGISTRYINDEX);
+    lua_getfield(L, -1, "initialstate");
+    API_STATE = luaL_ref(L, LUA_REGISTRYINDEX);
     lua_pop(L, 1); // pop misc api
 
     // load file api
@@ -47,47 +62,17 @@ lua_State* lua_initialize() {
 
 }
 
-// TODO implement this in lua
-void lua_initialize_state(lua_State* L, const char* filename) {
+void lua_load_file(lua_State* L, const char* filename) {
 
-    lua_newtable(L);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, API_STATE);
 
-    // buffer
     lua_pushstring(L, "buffer");
-    if (filename) {
-        lua_rawgeti(L, LUA_REGISTRYINDEX, API_TOPIECETABLE);
-        lua_rawgeti(L, LUA_REGISTRYINDEX, API_READFILE);
-        lua_pushstring(L, filename);
-        assert(lua_pcall(L, 1, 1, 0) == 0);
-        assert(lua_pcall(L, 1, 1, 0) == 0);
-    } else {
-        lua_rawgeti(L, LUA_REGISTRYINDEX, API_TOPIECETABLE);
-        lua_newtable(L);
-        assert(lua_pcall(L, 1, 1, 0) == 0);
-    }
+    lua_rawgeti(L, LUA_REGISTRYINDEX, API_TOPIECETABLE);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, API_READFILE);
+    lua_pushstring(L, filename);
+    assert(lua_pcall(L, 1, 1, 0) == 0);
+    assert(lua_pcall(L, 1, 1, 0) == 0);
     lua_settable(L, -3);
-
-    // exiting
-    lua_pushstring(L, "exiting");
-    lua_pushboolean(L, 0);
-    lua_settable(L, -3);
-
-    // x
-    lua_pushstring(L, "x");
-    lua_pushinteger(L, 1);
-    lua_settable(L, -3);
-
-    // y
-    lua_pushstring(L, "y");
-    lua_pushinteger(L, 1);
-    lua_settable(L, -3);
-
-    // mode
-    lua_pushstring(L, "mode");
-    lua_pushinteger(L, MODE_NORMAL);
-    lua_settable(L, -3);
-    
-    API_STATE = luaL_ref(L, LUA_REGISTRYINDEX);
 
 }
 
