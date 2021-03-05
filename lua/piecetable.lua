@@ -1,5 +1,11 @@
 local api = {}
 
+local table_assign = function(left, right)
+    for k, v in pairs(right) do
+        left[k] = v
+    end
+end
+
 local functions = {
     get = function(pt, i)
         return (api.flattenpiecetable(pt))[i]
@@ -72,11 +78,7 @@ api.topiecetable = function(t)
         table.insert(pt.ptrs, { data = t, offset = 1, length = #t })
     end
     setmetatable(pt, mt)
-    pt.sub = functions.sub
-    pt.flatten = functions.flatten
-    pt.get = functions.get
-    pt.len = functions.len
-    pt.join = functions.join
+    table_assign(pt, functions)
     return pt
 end
 
