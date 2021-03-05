@@ -8,6 +8,7 @@ extern "C" {
 #include <lua5.1/lauxlib.h>
 #include <lua5.1/lualib.h>
 }
+#include "lua.h"
 
 #include "buffer.h"
 #include "editor.h"
@@ -59,127 +60,22 @@ std::set<std::u32string> get_bindings(T lua_state, const char* mode) {
     return bindings;
 }
 
-static void push_state(lua_State *L, const editor& e, int BUFFER_REFERENCE) {
-    lua_newtable(L);
-    // buffer
-    lua_pushstring(L, "buffer");
-    lua_rawgeti(L, LUA_REGISTRYINDEX, BUFFER_REFERENCE);
-    lua_settable(L, -3);
-    // position
-    lua_pushstring(L, "x");
-    lua_pushinteger(L, e.pos.x);
-    lua_settable(L, -3);
-    lua_pushstring(L, "y");
-    lua_pushinteger(L, e.pos.y);
-    lua_settable(L, -3);
-    // mode
-    lua_pushstring(L, "mode");
-    lua_pushinteger(L, e.mode);
-    lua_settable(L, -3);
-}
-
-static void read_state(lua_State *L, editor& e, int BUFFER_REFERENCE) {
-    assert(lua_istable(L, -1));
-    {
-        lua_getfield(L, -1, "buffer");
-        if (!lua_isnil(L, -1)) {
-            lua_getglobal(L, "flattenpiecetable");
-            lua_pushvalue(L, -2);
-            lua_call(L, 1, 1);
-            // now there is a table of strings on the stack
-            assert(lua_istable(L, -1));
-            // traverse table of strings
-            std::vector<buffer_line> ls = {};
-            lua_pushnil(L);
-            while (lua_next(L, -2) != 0) {
-                ls.push_back(utf8_decode(std::string(lua_tolstring(L, -1, NULL))));
-                lua_pop(L, 1);
-            }
-            e.lines = ls;
-            lua_pop(L, 1); // pop table of strings
-            lua_rawseti(L, LUA_REGISTRYINDEX, BUFFER_REFERENCE); // pops buffer
-        } else {
-            lua_pop(L, 1); // pops buffer
-        }
-    }
-    {
-        lua_getfield(L, -1, "x");
-        if (!lua_isnil(L, -1)) {
-            e.pos.x = lua_tointeger(L, -1);
-        }
-        lua_pop(L, 1);
-    }
-    {
-        lua_getfield(L, -1, "y");
-        if (!lua_isnil(L, -1)) {
-            e.pos.y = lua_tointeger(L, -1);
-        }
-        lua_pop(L, 1);
-    }
-    {
-        lua_getfield(L, -1, "exiting");
-        if (!lua_isnil(L, -1)) {
-            e.exiting = true;
-        }
-        lua_pop(L, 1);
-    }
-    {
-        lua_getfield(L, -1, "mode");
-        if (!lua_isnil(L, -1)) {
-            e.mode = lua_tointeger(L, -1);
-        }
-        lua_pop(L, 1);
-    }
-    lua_pop(L, 1);
-}
 
 int main(int argc, char* argv[]) {
+    assert(tty_enable_raw_mode() == 0);
     editor e {};
     timer t {};
     window win {};
 
     e.filename = argv[1];
 
-    auto L = luaL_newstate();
-    luaL_openlibs(L);
-
     e.pos.x = 1;
     e.pos.y = 1;
-    assert(tty_enable_raw_mode() == 0);
 
-    // load file api
-    assert(luaL_dofile(L, "lua/file.lua") == 0);
-    lua_getfield(L, -1, "read");
-    const int API_READFILE = luaL_ref(L, LUA_REGISTRYINDEX);
-    lua_getfield(L, -1, "write");
-    const int API_WRITEFILE = luaL_ref(L, LUA_REGISTRYINDEX);
-    lua_pop(L, 1); // pop file api
+    lua_State* L = lua_initialize();
 
-    // load piecetable libs FIXME
-    assert(luaL_dofile(L, "lua/piecetable.lua") == 0);
-    lua_getfield(L, -1, "topiecetable");
-    lua_setglobal(L, "topiecetable");
-    lua_getfield(L, -1, "flattenpiecetable");
-    lua_setglobal(L, "flattenpiecetable");
-    lua_pop(L, 1);
-
-    // create buffer
-    lua_getglobal(L, "topiecetable");
-    if (e.filename) {
-        lua_rawgeti(L, LUA_REGISTRYINDEX, API_READFILE);
-        lua_pushstring(L, e.filename);
-        lua_call(L, 1, 1);
-    } else {
-        lua_newtable(L);
-    }
-    lua_call(L, 1, 1);
-    const int BUFFER_REFERENCE = luaL_ref(L, LUA_REGISTRYINDEX);
-    
-    // load config
-    assert(luaL_dofile(L, "config.lua") == 0);
-
-    push_state(L, e, BUFFER_REFERENCE);
-    read_state(L, e, BUFFER_REFERENCE);
+    lua_initialize_state(L, e.filename);
+    lua_state_to_editor(L, e);
 
     while (true) {
         win = editor_draw(e, win);
@@ -195,9 +91,9 @@ int main(int argc, char* argv[]) {
                 lua_getfield(L, -1, "normal");
                 lua_getfield(L, -1, utf8_encode(e.cmd).c_str());
                 assert(lua_isfunction(L, -1));
-                push_state(L, e, BUFFER_REFERENCE);
+                lua_push_state(L);
                 lua_call(L, 1, 1);
-                read_state(L, e, BUFFER_REFERENCE);
+                lua_update_state(L);
                 e.cmd = {};
                 lua_pop(L, 1);
                 lua_pop(L, 1);
@@ -213,25 +109,27 @@ int main(int argc, char* argv[]) {
                 lua_getfield(L, -1, "insert");
                 lua_getfield(L, -1, utf8_encode(e.cmd).c_str());
                 assert(lua_isfunction(L, -1));
-                push_state(L, e, BUFFER_REFERENCE);
+                lua_push_state(L);
                 lua_call(L, 1, 1);
-                read_state(L, e, BUFFER_REFERENCE);
+                lua_update_state(L);
                 e.cmd = {};
-                lua_pop(L, 1);
-                lua_pop(L, 1);
+                lua_pop(L, 1); // pop insert
+                lua_pop(L, 1); // pop bindings
             }
             // check if e.cmd is a prefix of some command, otherwise insert cmd
             if (bindings.upper_bound(e.cmd) == bindings.end() || bindings.upper_bound(e.cmd)->find(e.cmd) != 0) {
                 lua_getglobal(L, "events");
                 lua_getfield(L, -1, "insert");
-                push_state(L, e, BUFFER_REFERENCE);
+                assert(lua_isfunction(L, -1));
+                lua_push_state(L);
                 lua_pushstring(L, utf8_encode(e.cmd).c_str());
                 lua_call(L, 2, 1);
-                read_state(L, e, BUFFER_REFERENCE);
+                lua_update_state(L);
                 e.cmd = {};
-                lua_pop(L, 1);
+                lua_pop(L, 1); // pop events
             }
         }
+        lua_state_to_editor(L, e);
         if (e.saving) {
             //file_save(e.filename, e.lines);
             //sprintf(e.status, "Saving %s", e.filename);

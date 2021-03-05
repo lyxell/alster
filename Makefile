@@ -16,6 +16,7 @@ build/alster: \
 	build/syntax/c_string_re2c.o \
 	build/window_re2c.o \
 	build/tty.o \
+	build/lua.o \
 	build/utf8.o
 	mkdir -p build
 	$(CXX) \
@@ -23,6 +24,7 @@ build/alster: \
 		build/utf8.o \
 		build/editor.o \
 		build/tty.o \
+		build/lua.o \
 		build/syntax/c_re2c.o \
 		build/syntax/c_string_re2c.o \
 		build/window_re2c.o \
