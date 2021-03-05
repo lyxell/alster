@@ -1,7 +1,6 @@
 #include <cassert>
 #include <string>
 #include "syntax/syntax.h"
-#include "utf8.h"
 
 token_collection tokenize_c(const char32_t* str) {
     const char32_t* YYCURSOR = str;
