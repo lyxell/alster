@@ -13,6 +13,12 @@ static int API_TOPIECETABLE;
 static int API_FLATTENPIECETABLE;
 static int API_STATE;
 static int API_MERGESTATES;
+static int API_CONFIG;
+static int API_CONFIG_BINDINGS;
+static int API_CONFIG_BINDINGS_NORMAL;
+static int API_CONFIG_BINDINGS_INSERT;
+static int API_CONFIG_EVENTS;
+static int API_CONFIG_EVENTS_INSERT;
 
 lua_State* lua_initialize() {
 
@@ -57,6 +63,17 @@ lua_State* lua_initialize() {
 
     // load init
     assert(luaL_dofile(L, "config.lua") == 0);
+    lua_getfield(L, -1, "bindings");
+    lua_getfield(L, -1, "normal");
+    API_CONFIG_BINDINGS_NORMAL = luaL_ref(L, LUA_REGISTRYINDEX);
+    lua_getfield(L, -1, "insert");
+    API_CONFIG_BINDINGS_INSERT = luaL_ref(L, LUA_REGISTRYINDEX);
+    API_CONFIG_BINDINGS = luaL_ref(L, LUA_REGISTRYINDEX);
+    lua_getfield(L, -1, "events");
+    lua_getfield(L, -1, "insert");
+    API_CONFIG_EVENTS_INSERT = luaL_ref(L, LUA_REGISTRYINDEX);
+    API_CONFIG_EVENTS = luaL_ref(L, LUA_REGISTRYINDEX);
+    API_CONFIG = luaL_ref(L, LUA_REGISTRYINDEX);
 
     return L;
 
@@ -134,12 +151,19 @@ void lua_state_to_editor(lua_State* L, editor& e) {
 }
 
 void lua_event_insert(lua_State* L, const char* str) {
-    lua_getglobal(L, "events");
-    lua_getfield(L, -1, "insert");
+    lua_rawgeti(L, LUA_REGISTRYINDEX, API_CONFIG_EVENTS_INSERT);
     assert(lua_isfunction(L, -1));
     lua_push_state(L);
     lua_pushstring(L, str);
     lua_call(L, 2, 1);
     lua_update_state(L);
     lua_pop(L, 1);
+}
+
+void lua_push_bindings_normal(lua_State* L) {
+    lua_rawgeti(L, LUA_REGISTRYINDEX, API_CONFIG_BINDINGS_NORMAL);
+}
+
+void lua_push_bindings_insert(lua_State* L) {
+    lua_rawgeti(L, LUA_REGISTRYINDEX, API_CONFIG_BINDINGS_INSERT);
 }

@@ -32,15 +32,9 @@ struct timer {
     }
 };
 
-template <typename T>
-std::set<std::u32string> get_bindings(T lua_state, const char* mode) {
-    std::set<std::u32string> bindings;
-    // push config
-    lua_getglobal(lua_state, "bindings");
-    assert(lua_istable(lua_state, -1));
-    // push bindings
-    lua_getfield(lua_state, -1, mode);
+std::set<std::u32string> collect_bindings(lua_State* lua_state) {
     // traverse bindings
+    std::set<std::u32string> bindings;
     lua_pushnil(lua_state);
     while (lua_next(lua_state, -2) != 0) {
         // pops 'value', keeps 'key' for next iteration
@@ -51,9 +45,6 @@ std::set<std::u32string> get_bindings(T lua_state, const char* mode) {
         lua_pop(lua_state, 1);
     }
     // pop bindings
-    assert(lua_istable(lua_state, -1));
-    lua_pop(lua_state, 1);
-    // pop config
     assert(lua_istable(lua_state, -1));
     lua_pop(lua_state, 1);
     return bindings;
@@ -83,10 +74,10 @@ int main(int argc, char* argv[]) {
         t.start();
         // handle command if match
         if (e.mode == MODE_NORMAL) {
-            auto bindings = get_bindings(L, "normal");
+            lua_push_bindings_normal(L);
+            auto bindings = collect_bindings(L);
             if (bindings.find(e.cmd) != bindings.end()) {
-                lua_getglobal(L, "bindings");
-                lua_getfield(L, -1, "normal");
+                lua_push_bindings_normal(L);
                 lua_getfield(L, -1, utf8_encode(e.cmd).c_str());
                 assert(lua_isfunction(L, -1));
                 lua_push_state(L);
@@ -101,10 +92,10 @@ int main(int argc, char* argv[]) {
                 e.cmd = {};
             }
         } else if (e.mode == MODE_INSERT) {
-            auto bindings = get_bindings(L, "insert");
+            lua_push_bindings_insert(L);
+            auto bindings = collect_bindings(L);
             if (bindings.find(e.cmd) != bindings.end()) {
-                lua_getglobal(L, "bindings");
-                lua_getfield(L, -1, "insert");
+                lua_push_bindings_insert(L);
                 lua_getfield(L, -1, utf8_encode(e.cmd).c_str());
                 assert(lua_isfunction(L, -1));
                 lua_push_state(L);

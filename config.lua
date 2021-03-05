@@ -34,7 +34,9 @@ local history = {
     end
 }
 
-events = {
+local config = {}
+
+config.events = {
     insert = function(state, insertion)
         local b, x, y = state.buffer, state.x, state.y
         local line = b:get(y)
@@ -47,9 +49,9 @@ events = {
     end
 }
 
-bindings = {}
+config.bindings = {}
 
-bindings.normal = {
+config.bindings.normal = {
     ["x"] = function(state)
         local insertion = inspect({1,2,3})
         local b, x, y = state.buffer, state.x, state.y
@@ -148,7 +150,7 @@ bindings.normal = {
     end
 }
 
-bindings.insert = {
+config.bindings.insert = {
     ["\r"] = function(state)
         local b, x, y = state.buffer, state.x, state.y
         local l = b:get(y)
@@ -182,3 +184,5 @@ bindings.insert = {
         return {}
     end
 }
+
+return config
