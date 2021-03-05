@@ -15,8 +15,6 @@ build/alster: \
 	build/syntax/c_re2c.o \
 	build/syntax/c_string_re2c.o \
 	build/window_re2c.o \
-	build/file.o \
-	file.h \
 	build/tty.o \
 	build/utf8.o
 	mkdir -p build
@@ -28,7 +26,6 @@ build/alster: \
 		build/syntax/c_re2c.o \
 		build/syntax/c_string_re2c.o \
 		build/window_re2c.o \
-		build/file.o \
 		 -o $@ -llua5.1
 
 build/%.o: %.cpp
