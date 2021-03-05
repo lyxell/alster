@@ -19,10 +19,12 @@ struct window {
         size_t x;
         size_t y;
     } cursor;
-    std::vector<std::vector<window_cell>> matrix;
+    window_cell matrix[256][512];
     bool operator==(window rhs) {
         return std::tuple(width, height, matrix)
             == std::tuple(rhs.width, rhs.height, rhs.matrix);
+    }
+    window() : matrix() {
     }
 };
 

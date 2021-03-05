@@ -32,7 +32,10 @@ int token_to_color(int t) {
     return COLOR_RESET;
 }
 
-window window_render_buffer(window w, const std::vector<buffer_line>& lines, size_t scroll) {
+window window_render_buffer(window w,
+                            const std::vector<buffer_line>& lines,
+                            size_t scroll) {
+    memset(w.matrix, 0, sizeof(w.matrix));
     for (size_t y = 0; y < w.height; y++) {
         if (y + scroll >= lines.size()) continue;
         size_t x = 0;
@@ -54,7 +57,8 @@ window window_render_visual_selection(window w, buffer_position start,
     for (size_t y = 0; y < w.height; y++) {
         for (size_t x = 0; x < w.width; x++) {
             auto curr = std::pair(x, y + scroll);
-            if (w.matrix[y][x].ch && curr >= std::pair(start.x, start.y) && curr <= std::pair(end.x, end.y)) {
+            if (w.matrix[y][x].ch && curr >= std::pair(start.x, start.y)
+                                  && curr <= std::pair(end.x, end.y)) {
                 w.matrix[y][x].bg = COLOR_BRIGHT_BLACK_BG;
             }
         }
@@ -98,10 +102,6 @@ window window_update_size(window w) {
     assert(ioctl(1, TIOCGWINSZ, &ws) != -1 && ws.ws_col != 0);
     w.width = ws.ws_col;
     w.height = ws.ws_row;
-    w.matrix.resize(w.height);
-    for (size_t i = 0; i < w.height; i++) {
-        w.matrix[i].resize(w.width);
-    }
     return w;
 }
 
