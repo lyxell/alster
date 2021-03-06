@@ -34,17 +34,10 @@ int main(int argc, char* argv[]) {
     assert(tty_enable_raw_mode() == 0);
     editor e {};
     timer t {};
-
     e.filename = argv[1];
-
-    e.pos.x = 1;
-    e.pos.y = 1;
-
     lua_State* L = lua_initialize();
-
     lua_load_file(L, e.filename);
     lua_state_to_editor(L, e);
-
     while (true) {
         editor_draw(e);
         e.status[0] = '\0';
