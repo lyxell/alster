@@ -10,3 +10,5 @@ void lua_state_to_editor(lua_State* L, editor& ed);
 void lua_event_insert(lua_State* L, const char* str);
 void lua_push_bindings_normal(lua_State* L);
 void lua_push_bindings_insert(lua_State* L);
+void lua_set_cmd(lua_State* L, const char* str);
+void lua_handle_cmd(lua_State* L);

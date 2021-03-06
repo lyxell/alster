@@ -19,6 +19,9 @@ static int API_CONFIG_BINDINGS_NORMAL;
 static int API_CONFIG_BINDINGS_INSERT;
 static int API_CONFIG_EVENTS;
 static int API_CONFIG_EVENTS_INSERT;
+static int API_CONFIG_HANDLE_CMD;
+
+#define assert_call(L, n, m) do {if (lua_pcall(L, n, m, 0) != 0) {printf("%s\n", lua_tostring(L, -1));exit(1); }} while (0)
 
 lua_State* lua_initialize() {
 
@@ -63,6 +66,8 @@ lua_State* lua_initialize() {
 
     // load init
     assert(luaL_dofile(L, "config.lua") == 0);
+    lua_getfield(L, -1, "handlecmd");
+    API_CONFIG_HANDLE_CMD = luaL_ref(L, LUA_REGISTRYINDEX);
     lua_getfield(L, -1, "bindings");
     lua_getfield(L, -1, "normal");
     API_CONFIG_BINDINGS_NORMAL = luaL_ref(L, LUA_REGISTRYINDEX);
@@ -87,8 +92,8 @@ void lua_load_file(lua_State* L, const char* filename) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, API_TOPIECETABLE);
     lua_rawgeti(L, LUA_REGISTRYINDEX, API_READFILE);
     lua_pushstring(L, filename);
-    assert(lua_pcall(L, 1, 1, 0) == 0);
-    assert(lua_pcall(L, 1, 1, 0) == 0);
+    assert_call(L, 1, 1);
+    assert_call(L, 1, 1);
     lua_settable(L, -3);
 
 }
@@ -99,7 +104,7 @@ void lua_update_state(lua_State* L) {
     lua_insert(L, -2); 
     lua_rawgeti(L, LUA_REGISTRYINDEX, API_STATE);
     lua_insert(L, -2); 
-    assert(lua_pcall(L, 2, 0, 0) == 0);
+    assert_call(L, 2, 0);
 }
 
 void lua_push_state(lua_State* L) {
@@ -145,6 +150,11 @@ void lua_state_to_editor(lua_State* L, editor& e) {
     e.mode = lua_tointeger(L, -1);
     lua_pop(L, 1);
 
+    // cmd
+    lua_getfield(L, -1, "cmd");
+    e.cmd = std::string(lua_tostring(L, -1));
+    lua_pop(L, 1);
+
     // pop state
     lua_pop(L, 1);
 
@@ -166,4 +176,19 @@ void lua_push_bindings_normal(lua_State* L) {
 
 void lua_push_bindings_insert(lua_State* L) {
     lua_rawgeti(L, LUA_REGISTRYINDEX, API_CONFIG_BINDINGS_INSERT);
+}
+
+void lua_set_cmd(lua_State* L, const char* cmd) {
+    lua_rawgeti(L, LUA_REGISTRYINDEX, API_STATE);
+    lua_pushstring(L, "cmd");
+    lua_pushstring(L, cmd);
+    lua_settable(L, -3);
+    lua_pop(L, 1);
+}
+
+void lua_handle_cmd(lua_State* L) {
+    lua_rawgeti(L, LUA_REGISTRYINDEX, API_CONFIG_HANDLE_CMD);
+    lua_rawgeti(L, LUA_REGISTRYINDEX, API_STATE);
+    assert_call(L, 1, 1);
+    lua_update_state(L);
 }

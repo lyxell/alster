@@ -13,7 +13,8 @@ api.initialstate = {
     x = 1,
     y = 1,
     exiting = false,
-    mode = 0
+    mode = 0,
+    cmd = ""
 }
 
 return api

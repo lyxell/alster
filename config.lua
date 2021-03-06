@@ -49,6 +49,28 @@ config.events = {
     end
 }
 
+config.handlecmd = function(state)
+    local mode = "normal"
+    if state.mode == MODE_INSERT then
+        mode = "insert"
+    end
+    if config.bindings[mode][state.cmd] ~= nil then
+        state = config.bindings[mode][state.cmd](state)
+        state.cmd = ""
+        return state
+    else
+        -- if cmd is a prefix of some command we will not clear it
+        for k, _ in pairs(config.bindings[mode]) do
+            if #k > #state.cmd and k:sub(1, #state.cmd) == state.cmd then
+                return state
+            end
+        end
+    end
+    return {
+        cmd = ""
+    }
+end
+
 config.bindings = {}
 
 config.bindings.normal = {
