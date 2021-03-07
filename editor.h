@@ -13,7 +13,6 @@ enum {
 struct editor {
     std::string cmd;
     long int mode;
-    char status[120];
     buffer_position pos;
     std::vector<buffer_line> lines;
     bool exiting;

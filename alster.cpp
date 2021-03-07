@@ -40,7 +40,6 @@ int main(int argc, char* argv[]) {
     lua_state_to_editor(L, e);
     while (true) {
         editor_draw(e);
-        e.status[0] = '\0';
         t.report("render:    ");
         e.cmd += getchar_utf8();
         lua_set_cmd(L, e.cmd.c_str());
@@ -49,7 +48,6 @@ int main(int argc, char* argv[]) {
         lua_state_to_editor(L, e);
         if (e.saving) {
             //file_save(e.filename, e.lines);
-            //sprintf(e.status, "Saving %s", e.filename);
         }
         t.report("handle cmd:");
         t.start();
