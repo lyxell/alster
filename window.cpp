@@ -39,7 +39,7 @@ void window_render_buffer(window* w,
         if (y + scroll >= lines.size()) continue;
         size_t x = 0;
         for (auto [s, e, t] : tokenize_c(lines[y + scroll].c_str())) {
-            for (auto ch : std::u32string(s, e)) {
+            for (auto ch : std::string(s, e)) {
                 if (x < w->width) {
                     w->matrix[y][x].ch = ch;
                     w->matrix[y][x].fg = token_to_color(t);

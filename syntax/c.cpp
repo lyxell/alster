@@ -2,15 +2,15 @@
 #include <string>
 #include "syntax/syntax.h"
 
-token_collection tokenize_c(const char32_t* str) {
-    const char32_t* YYCURSOR = str;
-    const char32_t* YYMARKER;
+token_collection tokenize_c(const char* str) {
+    const char* YYCURSOR = str;
+    const char* YYMARKER;
     token_collection tokens;
     while (1) {
-        const char32_t* YYSTART = YYCURSOR;
+        const char* YYSTART = YYCURSOR;
         /*!re2c
         re2c:yyfill:enable = 0;
-        re2c:define:YYCTYPE = char32_t;
+        re2c:define:YYCTYPE = char;
 
         ([LUu] | [u][8])? ["] [^"\n\x00]* ["] {
             auto res = tokenize_c_string(YYSTART);

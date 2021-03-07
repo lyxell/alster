@@ -10,5 +10,5 @@ struct buffer_position {
     size_t y;
 };
 
-using buffer_char = char32_t;
-using buffer_line = std::u32string;
+using buffer_char = char;
+using buffer_line = std::string;

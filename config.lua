@@ -66,6 +66,11 @@ config.handlecmd = function(state)
             end
         end
     end
+    if mode == "insert" then
+        state = config.events.insert(state, state.cmd)
+        state.cmd = ""
+        return state
+    end
     return {
         cmd = ""
     }

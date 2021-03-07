@@ -5,13 +5,13 @@
  * Expects a null terminated string.
  */
 token_collection
-tokenize_c_string(const char32_t* str) {
-    const char32_t* YYCURSOR = str;
-    const char32_t* YYMARKER;
+tokenize_c_string(const char* str) {
+    const char* YYCURSOR = str;
+    const char* YYMARKER;
     token_collection tokens;
     /*!re2c
     re2c:yyfill:enable = 0;
-    re2c:define:YYCTYPE = char32_t;
+    re2c:define:YYCTYPE = char;
     [uUL] "\"" {
         tokens.emplace_back(str, str + 1, C_STRING_ENCODING_PREFIX);
         tokens.emplace_back(str + 1, str + 2, C_STRING_OPENING_QUOTE);
@@ -34,7 +34,7 @@ content:
     while (1) {
         /*!re2c
         re2c:yyfill:enable = 0;
-        re2c:define:YYCTYPE = char32_t;
+        re2c:define:YYCTYPE = char;
         "\"" {
             tokens.emplace_back(YYCURSOR - 1, YYCURSOR,
                                 C_STRING_CLOSING_QUOTE);

@@ -1,7 +1,12 @@
-#pragma once
-#include <locale>
-#include <codecvt>
+#ifndef UTF8_H
+#define UTF8_H
 
-std::u32string utf8_decode(const std::string& source);
+#ifdef __cplusplus
+extern "C" {
+#endif
+char *getchar_utf8();
+#ifdef __cplusplus
+}
+#endif
 
-std::string utf8_getchar();
+#endif

@@ -1,6 +1,5 @@
 #pragma once
 #include "buffer.h"
-#include <optional>
 #include <vector>
 
 struct window_cell {

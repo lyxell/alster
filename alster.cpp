@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
         editor_draw(e);
         e.status[0] = '\0';
         t.report("render:    ");
-        e.cmd += utf8_getchar();
+        e.cmd += getchar_utf8();
         lua_set_cmd(L, e.cmd.c_str());
         lua_handle_cmd(L);
         t.start();

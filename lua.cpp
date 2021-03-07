@@ -125,7 +125,7 @@ void lua_state_to_editor(lua_State* L, editor& e) {
     lua_pushnil(L);
     e.lines = {};
     while (lua_next(L, -2) != 0) {
-        e.lines.push_back(utf8_decode(std::string(lua_tolstring(L, -1, NULL))));
+        e.lines.push_back(std::string(lua_tolstring(L, -1, NULL)));
         lua_pop(L, 1);
     }
     lua_pop(L, 1); // pop table of strings

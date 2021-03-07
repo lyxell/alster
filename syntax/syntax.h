@@ -20,7 +20,7 @@ enum {
     C_PUNCTUATOR
 };
 
-using token_collection = std::vector<std::tuple<const char32_t*, const char32_t*, int>>;
+using token_collection = std::vector<std::tuple<const char*, const char*, int>>;
 
-token_collection tokenize_c_string(const char32_t*);
-token_collection tokenize_c(const char32_t*);
+token_collection tokenize_c_string(const char*);
+token_collection tokenize_c(const char*);
