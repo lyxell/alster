@@ -6,7 +6,7 @@ CXXFLAGS=-std=c++17 \
 		 -Wconversion \
 		 -Wfatal-errors
 
-CFLAGS=-std=c99 -g -O2 -Wall
+CFLAGS=-std=c99 -pedantic -g -O2 -Wall
 
 build/alster: \
 	build/alster.o \
@@ -18,7 +18,7 @@ build/alster: \
 	build/tty.o \
 	build/lua.o \
 	build/utf8.o
-	mkdir -p build
+	@mkdir -p build
 	$(CXX) \
 		build/alster.o \
 		build/utf8.o \
@@ -31,19 +31,19 @@ build/alster: \
 		 -o $@ -llua5.1
 
 build/%.o: %.cpp
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) -I. $< -c -o $@
 
 build/%.o: %.c
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -I. $< -c -o $@
 
 build/%.o: build/%.cpp
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) -I. $< -c -o $@
 
 build/%_re2c.cpp: %.cpp
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	re2c -W --input-encoding utf8 -i $< -o $@
 
 .PHONY: clean test
