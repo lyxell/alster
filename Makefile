@@ -8,12 +8,12 @@ CXXFLAGS=-std=c++17 \
 
 CFLAGS=-std=c99 -pedantic -g -O2 -Wall
 
+.SUFFIXES:
+
 build/alster: \
 	build/alster.o \
-	buffer.h \
 	build/editor.o \
 	build/syntax/c_re2c.o \
-	build/syntax/c_string_re2c.o \
 	build/window_re2c.o \
 	build/tty.o \
 	build/lua.o \
@@ -26,7 +26,6 @@ build/alster: \
 		build/tty.o \
 		build/lua.o \
 		build/syntax/c_re2c.o \
-		build/syntax/c_string_re2c.o \
 		build/window_re2c.o \
 		 -o $@ -llua5.1
 
@@ -38,11 +37,19 @@ build/%.o: %.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -I. $< -c -o $@
 
+build/%.o: build/%.c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -I. $< -c -o $@
+
 build/%.o: build/%.cpp
 	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) -I. $< -c -o $@
 
 build/%_re2c.cpp: %.cpp
+	@mkdir -p $(@D)
+	re2c -W --input-encoding utf8 -i $< -o $@
+
+build/%_re2c.c: %.c
 	@mkdir -p $(@D)
 	re2c -W --input-encoding utf8 -i $< -o $@
 

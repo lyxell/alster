@@ -14,13 +14,8 @@ static int token_to_color(int t) {
         case C_LITERAL_OCTAL:
         case C_LITERAL_BOOL:
             return COLOR_RED;
-        case C_STRING_CHAR:
+        case C_STRING:
             return COLOR_CYAN;
-        case C_STRING_ESCAPE_SEQUENCE:
-            return COLOR_GREEN;
-        case C_STRING_ENCODING_PREFIX:
-        case C_STRING_OPENING_QUOTE:
-        case C_STRING_CLOSING_QUOTE:
         case C_TYPE:
             return COLOR_BLUE;
         case C_KEYWORD:
@@ -32,20 +27,25 @@ static int token_to_color(int t) {
 }
 
 void window_render_buffer(window* w,
-                            const std::vector<buffer_line>& lines,
+                            const std::vector<std::string>& lines,
                             size_t scroll) {
     memset(w->matrix, 0, sizeof(w->matrix));
     for (size_t y = 0; y < w->height; y++) {
         if (y + scroll >= lines.size()) continue;
+        const char* ptr = lines[y + scroll].c_str();
+        const char* end = ptr + lines[y + scroll].size();
         size_t x = 0;
-        for (auto [s, e, t] : tokenize_c(lines[y + scroll].c_str())) {
-            for (auto ch : std::string(s, e)) {
-                if (x < w->width) {
-                    w->matrix[y][x].ch = ch;
-                    w->matrix[y][x].fg = token_to_color(t);
+        while (ptr < end) {
+            struct token t = tokenize_c(ptr);
+            if (t.start != t.end) {
+                while (t.start < t.end) {
+                    w->matrix[y][x].ch = *(t.start);
+                    w->matrix[y][x].fg = token_to_color(t.type);
+                    t.start++;
+                    x++;
                 }
-                x++;
             }
+            ptr = t.end;
         }
     }
 }
@@ -69,7 +69,7 @@ void window_to_string(const window *w, char* str) {
     sprintf(str, "\x1b[%ld;%ldH", w->cursor.y, w->cursor.x);
 }
 
-void window_update_cursor(window *w, const std::vector<buffer_line>& lines,
+void window_update_cursor(window *w, const std::vector<std::string>& lines,
                             buffer_position pos, size_t scroll) {
     w->cursor.y = pos.y - scroll;
     w->cursor.x = std::min(

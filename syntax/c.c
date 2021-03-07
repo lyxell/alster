@@ -1,11 +1,10 @@
-#include <cassert>
-#include <string>
 #include "syntax/syntax.h"
+#include <assert.h>
+#include <stdbool.h>
 
-token_collection tokenize_c(const char* str) {
+struct token tokenize_c(const char* str) {
     const char* YYCURSOR = str;
     const char* YYMARKER;
-    token_collection tokens;
     while (1) {
         const char* YYSTART = YYCURSOR;
         /*!re2c
@@ -13,48 +12,38 @@ token_collection tokenize_c(const char* str) {
         re2c:define:YYCTYPE = char;
 
         ([LUu] | [u][8])? ["] [^"\n\x00]* ["] {
-            auto res = tokenize_c_string(YYSTART);
-            std::copy(res.begin(), res.end(),
-                      std::back_inserter(tokens));
-            continue;
+            return (struct token) {YYSTART, YYCURSOR, C_STRING};
         }
 
         [1-9][0-9]* {
-            tokens.emplace_back(YYSTART, YYCURSOR, C_LITERAL_DECIMAL);
-            continue;
+            return (struct token) {YYSTART, YYCURSOR, C_LITERAL_DECIMAL};
         }
 
         [0][0-7]* {
-            tokens.emplace_back(YYSTART, YYCURSOR, C_LITERAL_OCTAL);
-            continue;
+            return (struct token) {YYSTART, YYCURSOR, C_LITERAL_OCTAL};
         }
 
         [0-9]+ {
-            tokens.emplace_back(YYSTART, YYCURSOR, C_INVALID);
-            continue;
+            return (struct token) {YYSTART, YYCURSOR, C_INVALID};
         }
 
         "true" | "false" {
-            tokens.emplace_back(YYSTART, YYCURSOR, C_LITERAL_BOOL);
-            continue;
+            return (struct token) {YYSTART, YYCURSOR, C_LITERAL_BOOL};
         }
 
         [/][/][^\x00]*[\x00] {
-            tokens.emplace_back(YYSTART, YYCURSOR-1, C_SINGLE_LINE_COMMENT);
-            return tokens;
+            return (struct token) {YYSTART, YYCURSOR - 1, C_SINGLE_LINE_COMMENT};
         }
 
         ("FILE" | "bool" | "char" | "const" | "double" | "auto"
         | "float" | "int" | "size_t" | "void" | "struct" | "enum" | "char32_t")
         [*]* {
-            tokens.emplace_back(YYSTART, YYCURSOR, C_TYPE);
-            continue;
+            return (struct token) {YYSTART, YYCURSOR, C_TYPE};
         }
 
         "break" | "continue" | "else" | "for" | "return" | "if" | "while" |
         "switch" | "case" | "default" | "using" {
-            tokens.emplace_back(YYSTART, YYCURSOR, C_KEYWORD);
-            continue;
+            return (struct token) {YYSTART, YYCURSOR, C_KEYWORD};
         }
 
         "[" | "]" | "(" | ")" | "{" | "}" | "." |
@@ -65,27 +54,26 @@ token_collection tokenize_c(const char* str) {
         "+=" | "-=" | "<<=" | ">>=" | "&=" | "^=" | "|=" |
         "," | "#" | "##" | "<:" | ":>" | "<%" | "%>" | "%:" | "%:%:"
         {
-            tokens.emplace_back(YYSTART, YYCURSOR, C_PUNCTUATOR);
-            continue;
+            return (struct token) {YYSTART, YYCURSOR, C_PUNCTUATOR};
         }
 
         [*]*[a-zA-Z_][a-zA-Z_0-9]* {
-            tokens.emplace_back(YYSTART, YYCURSOR, C_IDENTIFIER);
-            continue;
+            return (struct token) {YYSTART, YYCURSOR, C_IDENTIFIER};
         }
 
         "\x00"
         {
-            return tokens;
+            return (struct token) {YYSTART, YYSTART, C_INVALID};
         }
 
         *
         {
             assert(YYCURSOR - YYSTART == 1);
-            tokens.emplace_back(YYSTART, YYCURSOR, C_INVALID);
+            return (struct token) {YYSTART, YYCURSOR, C_INVALID};
             continue;
         }
         */
     }
-    return tokens;
+    assert(false);
+    return (struct token) {0};
 }

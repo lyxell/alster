@@ -152,7 +152,7 @@ void lua_state_to_editor(lua_State* L, editor& e) {
 
     // cmd
     lua_getfield(L, -1, "cmd");
-    e.cmd = std::string(lua_tostring(L, -1));
+    strcpy(e.cmd, lua_tostring(L, -1));
     lua_pop(L, 1);
 
     // pop state

@@ -1,14 +1,11 @@
-#pragma once
+#ifndef SYNTAX_H
+#define SYNTAX_H
 
-#include <vector>
-#include <tuple>
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 enum {
-    C_STRING_ENCODING_PREFIX,
-    C_STRING_OPENING_QUOTE,
-    C_STRING_CLOSING_QUOTE,
-    C_STRING_CHAR,
-    C_STRING_ESCAPE_SEQUENCE,
+    C_STRING,
     C_INVALID,
     C_IDENTIFIER,
     C_SINGLE_LINE_COMMENT,
@@ -20,7 +17,16 @@ enum {
     C_PUNCTUATOR
 };
 
-using token_collection = std::vector<std::tuple<const char*, const char*, int>>;
+struct token {
+    const char* start;
+    const char* end;
+    int type;
+};
 
-token_collection tokenize_c_string(const char*);
-token_collection tokenize_c(const char*);
+struct token tokenize_c(const char*);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

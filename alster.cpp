@@ -2,13 +2,13 @@
 #include <chrono>
 #include <iostream>
 #include <set>
+#include <cstring>
 
 #include <lua5.1/lua.h>
 #include <lua5.1/lauxlib.h>
 #include <lua5.1/lualib.h>
 #include "lua.h"
 
-#include "buffer.h"
 #include "editor.h"
 #include "tty.h"
 #include "utf8.h"
@@ -41,8 +41,8 @@ int main(int argc, char* argv[]) {
     while (true) {
         editor_draw(e);
         t.report("render:    ");
-        e.cmd += getchar_utf8();
-        lua_set_cmd(L, e.cmd.c_str());
+        strcat(e.cmd, getchar_utf8());
+        lua_set_cmd(L, e.cmd);
         lua_handle_cmd(L);
         t.start();
         lua_state_to_editor(L, e);

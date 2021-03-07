@@ -1,9 +1,9 @@
 #pragma once
 
-#include <optional>
-#include <set>
 #include "buffer.h"
 #include "window.h"
+#include <vector>
+#include <string>
 
 enum {
     MODE_NORMAL,
@@ -11,10 +11,10 @@ enum {
 };
 
 struct editor {
-    std::string cmd;
+    char cmd[64];
     long int mode;
     buffer_position pos;
-    std::vector<buffer_line> lines;
+    std::vector<std::string> lines;
     bool exiting;
     bool saving;
     size_t scroll;
