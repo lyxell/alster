@@ -8,7 +8,7 @@ local keywords = table.concat({
     "while", "switch", "case", "default", "using"
 }, "|")
 
-local operators = table.concat({
+local punctuators = table.concat({
     "[", "]", "(", ")", "{", "}", ".", "->", "++", "--", "&", "*", "+", "-",
     "~", "!", "/", "%", "<<", ">>", "<", ">", "<=", ">=", "==", "!=", "^",
     "|", "&&", "||", "?", ":", ";", "...", "=", "*=", "/=", "%=", "+=", "-=",
@@ -17,37 +17,14 @@ local operators = table.concat({
 }, "|")
 
 return {
-    ["(L|U|u|u8)?\"[^\"\n\x00]*\""] = function(str)
-        return {str, C_STRING}
-    end,
-    ["[1-9][0-9]*"] = function(str)
-        return {str, C_LITERAL_DECIMAL}
-    end,
-    ["[0][0-7]*"] = function(str)
-        return {str, C_LITERAL_OCTAL}
-    end,
-    ["[0-9]+"] = function(str)
-        return {str, C_INVALID}
-    end,
-    ["true|false"] = function(str)
-        return {str, C_LITERAL_BOOL}
-    end,
-    ["[/][/][^\0]*[\0]"] = function(str)
-        return {str, C_SINGLE_LINE_COMMENT}
-    end,
-    [types] = function(str)
-        return {str, C_TYPE}
-    end,
-    [keywords] = function(str)
-        return {str, C_KEYWORD}
-    end,
-    [operators] = function(str)
-        return {str, C_PUNCTUATOR}
-    end,
-    ["[*]*[a-zA-Z_][a-zA-Z_0-9]*"] = function(str)
-        return {str, C_IDENTIFIER}
-    end,
-    ["*"] = function(str)
-        return {str, C_INVALID}
-    end
+    {"(L|U|u|u8)?\"[^\"\n\x00]*\"", "C_STRING"},
+    {"[1-9][0-9]*",                 "C_LITERAL_DECIMAL"},
+    {"[0][0-7]*",                   "C_LITERAL_OCTAL"},
+    {"[0-9]+",                      "C_INVALID"},
+    {"true|false",                  "C_LITERAL_BOOL"},
+    {"[/][/][^\0]*[\0]",            "C_SINGLE_LINE_COMMENT"},
+    {types,                         "C_TYPE"},
+    {keywords,                      "C_KEYWORD"}
+    {punctuators,                   "C_PUNCTUATOR"},
+    {"[*]*[a-zA-Z_][a-zA-Z_0-9]*",  "C_IDENTIFIER"},
 }
