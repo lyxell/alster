@@ -1,12 +1,6 @@
 #include "utf8.h"
 #include <string.h>
 
-std::string utf8_encode(const std::u32string& source)
-{
-    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> cvt;
-	return cvt.to_bytes(source);
-}
-
 std::u32string utf8_decode(const std::string& source)
 {
     std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> cvt;
