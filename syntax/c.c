@@ -10,6 +10,7 @@ struct token tokenize_c(const char* str) {
         /*!re2c
         re2c:yyfill:enable = 0;
         re2c:define:YYCTYPE = char;
+        re2c:flags:case-ranges = 1;
 
         ([LUu] | [u][8])? ["] [^"\n\x00]* ["] {
             return (struct token) {YYSTART, YYCURSOR, C_STRING};

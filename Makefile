@@ -6,7 +6,7 @@ CXXFLAGS=-std=c++17 \
 		 -Wconversion \
 		 -Wfatal-errors
 
-CFLAGS=-std=c99 -pedantic -g -O2 -Wall
+CFLAGS=-std=c99 -g -O2 -Wall
 
 .SUFFIXES:
 
